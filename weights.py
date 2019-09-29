@@ -1,6 +1,8 @@
-import json
+import os
 import sys
-import tempfile
+os.chdir(os.path.dirname(__file__))
+
+
 from threading import Lock, Thread
 # import serial
 from Weight_tools.Car import AddCar
@@ -13,7 +15,6 @@ from Weight_tools.Postachalnik import DodatyPostachalnika, PostachalnikiWindows
 from Weight_tools.DateDialog import *
 from Weight_tools.WaitEditor import EditWaitForArchive
 
-import os
 # import win32api
 # import win32print
 import paho.mqtt.client as mqtt
@@ -180,8 +181,8 @@ class MainWindow(QtWidgets.QMainWindow):
         end_date, end_time, begin_date, begin_time, ok = self.doubleDateDialog.getDateTime(
         )
         query = "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1 AND (" % (
-        '{0:%Y-%m-%d}'.format(end_date),
-        '{0:%Y-%m-%d}'.format(begin_date))
+            '{0:%Y-%m-%d}'.format(end_date),
+            '{0:%Y-%m-%d}'.format(begin_date))
         for m in makulatura:
             query = query + "material LIKE ('%" + m + "%') OR "
         query = query[:-3]
@@ -207,8 +208,8 @@ class MainWindow(QtWidgets.QMainWindow):
         end_date, end_time, begin_date, begin_time, ok = self.doubleDateDialog.getDateTime(
         )
         query = "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1 AND (" % (
-        '{0:%Y-%m-%d}'.format(end_date),
-        '{0:%Y-%m-%d}'.format(begin_date))
+            '{0:%Y-%m-%d}'.format(end_date),
+            '{0:%Y-%m-%d}'.format(begin_date))
         for p in polymer:
             query = query + "material LIKE ('%" + p + "%') OR "
         query = query[:-3]
