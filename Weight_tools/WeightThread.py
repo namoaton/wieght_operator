@@ -29,7 +29,9 @@ class ReadWeightThread(Thread):
             socket.AF_INET,  # Internet
             socket.SOCK_DGRAM)  # UDPo
         # self.sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self.sock.bind((UDP_IP, UDP_PORT))
+        #  uncomment below to work with weights!!!!!!!!!!!!!!!!!!!!!!!!!
+        # self.sock.bind((UDP_IP, UDP_PORT))
+
         # procDone = QtCore.pyqtSignal(str)
         host_display = '192.168.1.177'
         port_display = 8888
