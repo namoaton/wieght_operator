@@ -1,8 +1,8 @@
 import datetime
-from Weight_tools.tools import *
 import json
 from PyQt5 import QtWidgets, QtCore, QtGui
-
+from Weight_tools.tools import *
+from Weight_tools.Checkable_combo import CheckableComboBox
 
 class Record:
     def __init__(self):
@@ -43,7 +43,6 @@ class Record:
         if self.kassir == "" or self.avto == "" or self.postachalnik == "" or self.vaga == 0 or self.material == "":  # or self.price == 0 :
             return False
         return True
-
 
 class DisplayRecords(QtWidgets.QMainWindow):
     def __init__(self,
@@ -104,11 +103,11 @@ class DisplayRecords(QtWidgets.QMainWindow):
             print(i)
             print("Json result ", self.result[counter][6])
             ########
-            old_type_zasor = self.result[counter][13]
+            old_type_zasor= self.result[counter][13]
             zasor_flag = 1
             ########
             records_materials = json.loads(self.result[counter][6])
-            if self.bn == 1:
+            if self.bn==1:
                 for element in polymer:
                     records_materials.pop(element, None)
             if self.bn == 2:
@@ -118,7 +117,8 @@ class DisplayRecords(QtWidgets.QMainWindow):
                 multi = polymer + makulatura
                 keys_to_delete = []
                 for key in records_materials.keys():
-                    if key not in multi:
+                    if "-бн" not in key:
+                    # if key not in multi:
                         keys_to_delete.append(key)
                 for kd in keys_to_delete:
                     records_materials.pop(kd, None)
@@ -126,7 +126,7 @@ class DisplayRecords(QtWidgets.QMainWindow):
                 multi = polymer + makulatura
                 keys_to_delete = []
                 for key in records_materials.keys():
-                    if key in multi:
+                    if key  in multi:
                         rekeys_to_delete.append(key)
                 for kd in keys_to_delete:
                     records_materials.pop(kd, None)
@@ -157,17 +157,17 @@ class DisplayRecords(QtWidgets.QMainWindow):
                 if key in self.sum_material_dict:
                     self.sum_material_dict[key][
                         'total_cost'] = self.sum_material_dict[key]['total_cost'] + float(
-                        records_materials[key]['weight'] *
-                        records_materials[key]['price'])
+                            records_materials[key]['weight'] *
+                            records_materials[key]['price'])
                     self.sum_material_dict[key][
                         'weight'] = self.sum_material_dict[key]['weight'] + records_materials[key]['weight']
                 else:
                     self.sum_material_dict[key] = {
                         'total_cost':
-                            float(records_materials[key]['weight'] *
-                                  records_materials[key]['price']),
+                        float(records_materials[key]['weight'] *
+                              records_materials[key]['price']),
                         'weight':
-                            records_materials[key]['weight']
+                        records_materials[key]['weight']
                     }
                 self.table.setItem(row_index, 5,
                                    QtWidgets.QTableWidgetItem(
@@ -181,20 +181,20 @@ class DisplayRecords(QtWidgets.QMainWindow):
                     row_index, 7,
                     QtWidgets.QTableWidgetItem(
                         str(records_materials[key][
-                                'price'])))  # self.result[counter][7])))
+                            'price'])))  #self.result[counter][7])))
                 if "trash" in records_materials[key].keys():
                     self.table.setItem(row_index, 8,
-                                       QtWidgets.QTableWidgetItem(
-                                           str(records_materials[key]['trash'])))
-                elif old_type_zasor != 0 and zasor_flag:
+                                   QtWidgets.QTableWidgetItem(
+                                       str(records_materials[key]['trash'])))
+                elif old_type_zasor !=0 and zasor_flag:
                     self.table.setItem(row_index, 8,
-                                       QtWidgets.QTableWidgetItem(
-                                           str(old_type_zasor)))
+                                   QtWidgets.QTableWidgetItem(
+                                       str(old_type_zasor)))
                     zasor_flag = 0
                 else:
                     self.table.setItem(row_index, 8,
-                                       QtWidgets.QTableWidgetItem(
-                                           str(0)))
+                                   QtWidgets.QTableWidgetItem(
+                                       str(0)))
                 total_summ = total_summ + (records_materials[key]['weight'] *
                                            records_materials[key]['price'])
                 print(total_summ)
@@ -202,7 +202,7 @@ class DisplayRecords(QtWidgets.QMainWindow):
                     row_index, 9,
                     QtWidgets.QTableWidgetItem("{0:.2f}".format(
                         records_materials[key]['weight'] * records_materials[
-                            key]['price'])))  # str(record_weight)))
+                            key]['price'])))  #str(record_weight)))
                 enter_time = self.result[counter][0]
                 exit_time = self.result[counter][11]
                 if (exit_time != None):
@@ -237,22 +237,29 @@ class DisplayRecords(QtWidgets.QMainWindow):
             if len(key) >= 7:
                 info_summary = info_summary + key + ": \t" + str(
                     value['weight']) + 'кг\t' + str("{0:.2f}".format(
-                    value['total_cost'], 3)) + " грн \n"
+                        value['total_cost'], 3)) + " грн \n"
             else:
                 info_summary = info_summary + key + ": \t\t" + str(
                     value['weight']) + 'кг\t' + str("{0:.2f}".format(
-                    value['total_cost'], 3)) + " грн \n"
+                        value['total_cost'], 3)) + " грн \n"
         self.info_box = QtWidgets.QHBoxLayout()
         self.short_info_box = QtWidgets.QVBoxLayout()
         self.filter_box = QtWidgets.QVBoxLayout()
-        self.post_filter = QtWidgets.QComboBox()
-        self.filter_button = QtWidgets.QPushButton("Фільтр постачльника")
+        self.post_filter = CheckableComboBox()#QtWidgets.QComboBox()
+        self.filter_button = QtWidgets.QPushButton("Фільтр постачальника")
+        self.mater_filter = CheckableComboBox()
+        self.materf_button = QtWidgets.QPushButton("Фільтр матеріалів")
         self.total_cost = QtWidgets.QLabel(
             'Усього: ' + "{0:.2f}".format(total_summ))
         # self.post_filter.setFont(self.newfont)
-        self.post_filter.addItems(sorted(self.postach_list))
+
+        # self.post_filter.addItems(sorted(self.postach_list))
+        for p in sorted(self.postach_list):
+            self.post_filter.addItem(p)
         self.filter_box.addWidget(self.post_filter)
         self.filter_box.addWidget(self.filter_button)
+        self.filter_box.addWidget(self.mater_filter)
+        self.filter_box.addWidget(self.materf_button)
         self.filter_box.addWidget(self.total_cost)
         self.filter_box.setAlignment(QtCore.Qt.AlignTop)
         # self.info_label = QtWidgets.QLabel(info_summary)
@@ -307,6 +314,8 @@ class DisplayRecords(QtWidgets.QMainWindow):
         self.short_info_button = QtWidgets.QPushButton(
             "Зберегти короткий звіт")
         self.summ_value = QtWidgets.QLabel()
+        for p in sorted(list(self.sum_material_dict.keys())):
+            self.mater_filter.addItem(p)
         self.filter_box.addWidget(self.summ_value)
         self.short_info_box.addWidget(self.info_label)
         self.short_info_box.addWidget(self.short_info_button)
@@ -324,6 +333,7 @@ class DisplayRecords(QtWidgets.QMainWindow):
         self.csv_button.clicked.connect(self.download_csv)
         self.short_info_button.clicked.connect(self.download_short_csv)
         self.filter_button.clicked.connect(self.show_filtered_data)
+        self.materf_button.clicked.connect(self.show_filtered_mater)
         self.table.itemSelectionChanged.connect(self.cell_was_clicked)
 
     def cell_was_clicked(self):
@@ -338,14 +348,55 @@ class DisplayRecords(QtWidgets.QMainWindow):
             self.summ_value.setText("Сумма обраних комірок: %.2f" % total_sum)
         else:
             self.summ_value.setText("")
+    def get_postach_filter(self):
+        p_values=[]
+        for i in range(self.post_filter.count()):
+            if self.post_filter.itemChecked(i):
+                p_values.append( self.post_filter.itemText(i))
+        print(p_values)
+        return p_values
 
-    def show_filtered_data(self):
-        filtr_postach = str(self.post_filter.currentText())
+    def get_mater_filter(self):
+        p_values=[]
+        for i in range(self.mater_filter.count()):
+            if self.mater_filter.itemChecked(i):
+                p_values.append( self.mater_filter.itemText(i))
+        print(p_values)
+        return p_values
+
+    def show_filtered_mater(self):
+        filtr_postach = self.get_mater_filter()
+        # filtr_postach = str(self.post_filter.currentText())
         result = []
         for i in self.result:
-            if filtr_postach in i:
-                result.append(i)
+            print(i[6])
+            json_vals = json.loads(i[6])
+            json_keys = json_vals.keys()
+            keys_to_delete =[]
+            for k in json_keys:
+                if k not in(filtr_postach):
+                    keys_to_delete.append(k)
+            for k in keys_to_delete:
+                json_vals.pop(k,None)
+            if json_vals:
+                vals = list(i)
+                vals[6] = json.dumps(json_vals)
+                result.append(tuple(vals))
+
+                # if p in json.loads(i[6]).keys():
+                    # result.append(i)
         print(filtr_postach, result)
+        DisplayRecords(self, result).show()
+
+    def show_filtered_data(self):
+        filtr_postach = self.get_postach_filter()
+        # filtr_postach = str(self.post_filter.currentText())
+        result = []
+        for i in self.result:
+            for p in filtr_postach:
+                if p in i:
+                    result.append(i)
+        # print(filtr_postach, result)
         DisplayRecords(self, result).show()
 
     def download_short_csv(self):
@@ -402,7 +453,7 @@ class DisplayRecords(QtWidgets.QMainWindow):
                         row_append.append(
                             self.table.item(row_count,
                                             column_counter).text().replace(
-                                '.', ','))
+                                                '.', ','))
                         column_counter += 1
                     print(row_append)
                     writer.writerow(row_append)
@@ -486,17 +537,17 @@ class DisplayRecords(QtWidgets.QMainWindow):
                     if key in self.sum_material_dict:
                         self.sum_material_dict[key][
                             'total_cost'] = self.sum_material_dict[key]['total_cost'] + float(
-                            records_materials[key]['weight'] *
-                            records_materials[key]['price'])
+                                records_materials[key]['weight'] *
+                                records_materials[key]['price'])
                         self.sum_material_dict[key][
                             'weight'] = self.sum_material_dict[key]['weight'] + records_materials[key]['weight']
                     else:
                         self.sum_material_dict[key] = {
                             'total_cost':
-                                float(records_materials[key]['weight'] *
-                                      records_materials[key]['price']),
+                            float(records_materials[key]['weight'] *
+                                  records_materials[key]['price']),
                             'weight':
-                                records_materials[key]['weight']
+                            records_materials[key]['weight']
                         }
 
                     self.table.setItem(
@@ -511,20 +562,20 @@ class DisplayRecords(QtWidgets.QMainWindow):
                         row_index, 7,
                         QtWidgets.QTableWidgetItem(
                             str(records_materials[key][
-                                    'price'])))  # self.result[counter][7])))
+                                'price'])))  #self.result[counter][7])))
                     self.table.setItem(row_index, 8,
                                        QtWidgets.QTableWidgetItem(
                                            str(self.result[counter][13])))
                     total_summ = total_summ + (
-                            records_materials[key]['weight'] *
-                            records_materials[key]['price'])
+                        records_materials[key]['weight'] *
+                        records_materials[key]['price'])
                     print(total_summ)
                     self.table.setItem(
                         row_index, 9,
                         QtWidgets.QTableWidgetItem("{0:.2f}".format(
                             records_materials[key]['weight'] *
                             records_materials[key][
-                                'price'])))  # str(record_weight)))
+                                'price'])))  #str(record_weight)))
                     enter_time = self.result[counter][0]
                     exit_time = self.result[counter][11]
                     if (exit_time != None):
@@ -555,15 +606,14 @@ class DisplayRecords(QtWidgets.QMainWindow):
                 if len(key) >= 7:
                     info_summary = info_summary + key + ": \t" + str(
                         value['weight']) + 'кг\t' + str(
-                        "{0:.2f}".format(value['total_cost'],
-                                         3)) + " грн \n"
+                            "{0:.2f}".format(value['total_cost'],
+                                             3)) + " грн \n"
                 else:
                     info_summary = info_summary + key + ": \t\t" + str(
                         value['weight']) + 'кг\t' + str(
-                        "{0:.2f}".format(value['total_cost'],
-                                         3)) + " грн \n"
+                            "{0:.2f}".format(value['total_cost'],
+                                             3)) + " грн \n"
             self.info_label.setText(info_summary)
-
 
 class RecordSelector(QtWidgets.QDialog):
     def __init__(self, parent=None):
