@@ -127,7 +127,7 @@ class DisplayRecords(QtWidgets.QMainWindow):
                 keys_to_delete = []
                 for key in records_materials.keys():
                     if key  in multi:
-                        rekeys_to_delete.append(key)
+                        keys_to_delete.append(key)
                 for kd in keys_to_delete:
                     records_materials.pop(kd, None)
             for key in records_materials.keys():
