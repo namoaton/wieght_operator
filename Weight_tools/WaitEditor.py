@@ -1,7 +1,8 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
+
+from Weight_tools.Record import Record
 from Weight_tools.tools import *
 import json
-
 
 class EditWaitForArchive(QtWidgets.QMainWindow):
     procDone = QtCore.pyqtSignal(str)
@@ -44,6 +45,9 @@ class EditWaitForArchive(QtWidgets.QMainWindow):
             self.postach_name = QtWidgets.QComboBox()
             postachalnik_list.sort()
             self.postach_name.addItems(sorted(postachalnik_list))
+            if(self.result[0][5]):
+               self.postach_name.setCurrentIndex(
+                self.postach_name.findText(self.result[0][5], QtCore.Qt.MatchFixedString))
         else:
             self.postach_name = QtWidgets.QLabel(self.result[0][5])
         self.postach_name.setFont(self.newfont)
@@ -128,12 +132,23 @@ class EditWaitForArchive(QtWidgets.QMainWindow):
         self.diff_label.setFont(self.newfont)
         self.diff_value = QtWidgets.QLabel(str(self.diff) + " кг")
         self.diff_value.setFont(self.newfont)
+        if (self.netto - self.total_summ)>0:
+            self.diff_value.setStyleSheet('color: red')
+        elif (self.netto - self.total_summ)<0:
+            self.diff_value.setStyleSheet('color: blue')
+        else:
+            self.diff_value.setStyleSheet('color: black')
+        self.diff_value.setText(str(self.netto - self.total_summ))
+        self.summ_label = QtWidgets.QLabel('')
+        self.summ_label.setFont(self.newfont)
         self.zasor_label = QtWidgets.QLabel('Засмічення')
         self.zasor_label.setFont(self.newfont)
         self.zasor_value = QtWidgets.QLineEdit()
         self.zasor_value.setFont(self.newfont)
         self.zasor_value.setText("0")
         self.zasor = 0
+        self.summ_value = QtWidgets.QLabel('')
+        self.summ_value.setFont(self.newfont)
         try:
             result = make_request(
                 "SELECT zasor FROM records WHERE id =%s" % self.index)
@@ -150,6 +165,8 @@ class EditWaitForArchive(QtWidgets.QMainWindow):
         self.print_button.setFont(self.newfont)
         self.cancel_button = QtWidgets.QPushButton('Відміна')
         self.cancel_button.setFont(self.newfont)
+        self.save_button = QtWidgets.QPushButton('Зберегти')
+        self.save_button.setFont(self.newfont)
         self.addRow_button = QtWidgets.QPushButton("Додати ряд")
         # self.addRow_button.setFont(self.newfont)
         self.mat_input = QtWidgets.QLineEdit()
@@ -171,7 +188,8 @@ class EditWaitForArchive(QtWidgets.QMainWindow):
         left_box.addWidget(self.netto_label)
         left_box.addWidget(self.total_summ_label)
         left_box.addWidget(self.diff_label)
-        left_box.addWidget(self.zasor_label)
+        left_box.addWidget(self.summ_label)
+        # left_box.addWidget(self.zasor_label)
         right_box = QtWidgets.QVBoxLayout()
         right_box.addWidget(self.id_value)
         right_box.addWidget(self.data_value)
@@ -182,7 +200,8 @@ class EditWaitForArchive(QtWidgets.QMainWindow):
         right_box.addWidget(self.netto_value)
         right_box.addWidget(self.total_summ_value)
         right_box.addWidget(self.diff_value)
-        right_box.addWidget(self.zasor_value)
+        right_box.addWidget(self.summ_value)
+        # right_box.addWidget(self.zasor_value)
         # car_num_box.addStretch()
         info_box = QtWidgets.QHBoxLayout()
         info_box.addLayout(left_box)
@@ -191,6 +210,7 @@ class EditWaitForArchive(QtWidgets.QMainWindow):
         material_box.addWidget(self.table)
         button_box = QtWidgets.QHBoxLayout()
         button_box.addWidget(self.write_button)
+        button_box.addWidget(self.save_button)
         button_box.addWidget(self.split_button)
         # button_box.addWidget(self.print_button)
         button_box.addWidget(self.cancel_button)
@@ -198,6 +218,7 @@ class EditWaitForArchive(QtWidgets.QMainWindow):
         window_layout.addLayout(info_box)
         window_layout.addLayout(material_box)
         window_layout.addLayout(add_row_layout)
+        # window_layout.addWidget(self.summ_value)
         window_layout.addLayout(button_box)
         self.table.itemChanged.connect(self.changed)
         self.cancel_button.clicked.connect(self.Cancel)
@@ -205,14 +226,32 @@ class EditWaitForArchive(QtWidgets.QMainWindow):
         self.write_button.clicked.connect(self.write_to_archive)
         self.print_button.clicked.connect(self.print_check)
         self.split_button.clicked.connect(self.split)
+        self.save_button.clicked.connect(self.save_rec)
         self.zasor_value.returnPressed.connect(self.zasor_changed)
+        self.table.itemSelectionChanged.connect(self.cell_was_clicked)
+        self.weigth_input.returnPressed.connect(self.add_row_mater)
         # vbox.addWidget(self.write_button)
         # self.write_button.clicked.connect(self.write_postach)
         central_widget.setLayout(window_layout)
 
+    def cell_was_clicked(self):
+        total_sum = 0
+        for item in self.table.selectedItems():
+            print(item.column())
+            if item.column() == 3:
+                print(item.text())
+                total_sum = total_sum + float(item.text())
+        # item = self.report_table.itemAt(row, column)
+        if total_sum:
+            self.summ_value.setText("%.2f" % total_sum)
+            self.summ_label.setText("Сумма:" )
+        else:
+            self.summ_value.setText("")
+            self.summ_label.setText("" )
+
     def split(self):
         print(self.result)
-        self.total_summ = int(self.total_summ_value.text().replace(" кг", ""))
+        self.total_summ = float(self.total_summ_value.text().replace(" кг", ""))
         print("total_summ", self.total_summ)
 
         new_weight = self.result[0][2] - self.total_summ
@@ -253,12 +292,16 @@ class EditWaitForArchive(QtWidgets.QMainWindow):
             "UPDATE records SET tara = %s, material = '%s', netto = %d, postachalnik = '%s' WHERE id = %s"
             % (split_result[0][3], query_json, self.netto, postach,
                self.index))
-        query = "INSERT INTO records (car_num, brutto,tara,kassir,postachalnik,material,price,is_enter,is_oplacheno,is_finished,zasor,netto,exit_time) VALUES('%s',%d,%d,'%s','%s','%s',%f,%d,%d,%d,%d,%d,now())" % (
+        print(new_result)
+        query = "INSERT INTO records (car_num, brutto,tara,kassir,postachalnik,material,price,is_enter,is_oplacheno,is_finished,zasor,netto,exit_time,date) VALUES('%s',%d,%d,'%s','%s','%s',%f,%d,%d,%d,%d,%d,'%s','%s')" % (
             new_result[0][1], new_result[0][2], new_result[0][3],
             new_result[0][4], new_result[0][5], new_result[0][6],
             new_result[0][7], new_result[0][8], new_result[0][9],
             new_result[0][10], new_result[0][13],
-            new_result[0][2] - new_result[0][3])
+            new_result[0][2] - new_result[0][3],
+            new_result[0][0],
+            new_result[0][0])
+        print(query)
         rec_id = write_to_db(query)
         print(rec_id)
         try:
@@ -271,7 +314,7 @@ class EditWaitForArchive(QtWidgets.QMainWindow):
             self, index=rec_id, result=split_result, postach_edit=1).show()
         print(self.total_summ)
         self.procDone.emit("completed")
-        comm.reload_all.emit()
+        Record.comm.reload_all.emit()
         # write_to_db(query)
         print("Split!!")
 
@@ -350,7 +393,7 @@ class EditWaitForArchive(QtWidgets.QMainWindow):
                 'trash': float(self.table.item(i, 4).text().replace(',', '.'))
             }
         print(self.json_value)
-        self.total_summ = int(self.total_summ_value.text().replace(" кг", ""))
+        self.total_summ = float(self.total_summ_value.text().replace(" кг", ""))
         print(self.total_summ)
         print(self.netto)
         self.diff = self.netto - self.total_summ
@@ -368,8 +411,8 @@ class EditWaitForArchive(QtWidgets.QMainWindow):
             write_to_db("UPDATE records SET zasor = %d WHERE id = %s" %
                         (self.zasor, self.index))
             self.procDone.emit("completed")
-            comm.reload_all.emit()
-            mqtt_client.publish("/reload", "1")
+            Record.comm.reload_all.emit()
+            # mqtt_client.publish("/reload", "1")
             self.close()
         elif self.diff < 0:
             QtWidgets.QMessageBox.about(self, 'Вага по даним більше ніж нетто',
@@ -381,6 +424,39 @@ class EditWaitForArchive(QtWidgets.QMainWindow):
             print("Вага по даним менше ніж нетто")
         #make query string
         #execute query
+
+    def save_rec(self):
+        #load json from table
+        print("save changes")
+        self.json_value = {}
+        total_rows = self.table.rowCount()
+        for i in range(0, total_rows):
+            self.json_value[self.table.item(i, 0).text()] = {
+                'weight': int(self.table.item(i, 1).text().replace(',', '.')),
+                'price': float(self.table.item(i, 2).text().replace(',', '.')),
+                'trash': float(self.table.item(i, 4).text().replace(',', '.'))
+            }
+        print(self.json_value)
+        self.total_summ = float(self.total_summ_value.text().replace(" кг", ""))
+        print(self.total_summ)
+        print(self.netto)
+        self.diff = self.netto - self.total_summ
+        print(self.diff)
+        print(type(self.diff))
+        query_json = json.dumps(self.json_value, ensure_ascii=False)
+        if self.postach_edit:
+            postach = self.postach_name.currentText()
+        else:
+            postach = self.postach_name.text()
+        write_to_db(
+            "UPDATE records SET material = '%s', is_archived = 0, netto = %s, postachalnik = '%s' WHERE id = %s"
+            % (query_json, self.netto, postach, self.index))
+        write_to_db("UPDATE records SET zasor = %d WHERE id = %s" %
+                    (self.zasor, self.index))
+        self.procDone.emit("completed")
+        Record.comm.reload_all.emit()
+
+
     def print_check(self):
         check_string = "Print test"
         self.json_value = {}
@@ -470,7 +546,7 @@ class EditWaitForArchive(QtWidgets.QMainWindow):
                             self.table.item(row_count, 2).text().replace(
                                 ',', '.'))
                         weight = int(self.table.item(row_count, 1).text())
-                        trash = int(self.table.item(row_count, 4).text())
+                        trash = float(self.table.item(row_count, 4).text())
                         total_trash = total_trash  + trash
                         self.table.setItem(row_count, 3,
                                            QtWidgets.QTableWidgetItem(
@@ -486,7 +562,14 @@ class EditWaitForArchive(QtWidgets.QMainWindow):
                 self.total_summ = self.total_summ + self.zasor
                 self.zasor_value.setText(str(self.zasor+total_trash))
                 self.total_summ_value.setText(str(self.total_summ))
+                if (self.netto - self.total_summ)>0:
+                    self.diff_value.setStyleSheet('color: red')
+                elif (self.netto - self.total_summ)<0:
+                    self.diff_value.setStyleSheet('color: blue')
+                else:
+                    self.diff_value.setStyleSheet('color: black')
                 self.diff_value.setText(str(self.netto - self.total_summ))
+
             elif item.column() == 0 and item.text() == "":
                 print("Row removed")
                 self.table.removeRow(item.row())
@@ -525,6 +608,9 @@ class EditWaitForArchive(QtWidgets.QMainWindow):
             self.total_summ = 0
             self.total_summ_value.setText(str(self.total_summ))
             self.diff_value.setText(str(self.netto - self.total_summ))
-
-
-
+            if (self.netto - self.total_summ)>0:
+                self.diff_value.setStyleSheet('color: red')
+            elif (self.netto - self.total_summ)<0:
+                self.diff_value.setStyleSheet('color: blue')
+            else:
+                self.diff_value.setStyleSheet('color: black')

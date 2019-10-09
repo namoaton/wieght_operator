@@ -5,6 +5,7 @@ from PyQt5 import QtCore
 from tabulate import tabulate
 
 
+
 configParser = configparser.RawConfigParser()
 configFilePath = "Weight_tools/weight.conf"
 configParser.read(configFilePath)
@@ -98,6 +99,14 @@ def print_data(printstring):
 def print_check(doc_number):
     print_data(get_check_data(doc_number))
 
+def get_kassiry():
+    global kassiry
+    kassiry = []
+    print('Get kassiry')
+    result = make_request("SELECT * FROM kassiry")
+    for i in result:
+        kassiry.append(i[0])
+
 print('Get kassiry')
 result = make_request("SELECT * FROM kassiry")
 for i in result:
@@ -107,6 +116,15 @@ print('Get material')
 result = make_request("SELECT * FROM materials")
 for i in result:
     materials.append(i[0].lower())
+
+def get_postachalniky():
+    global postachalnik_list
+    postachalnik_list = []
+    print('Get postachalniky')
+    result = make_request("SELECT * FROM postachalniky")
+    for i in result:
+        postachalnik_list.append(i[0].lower())
+    postachalnik_list.sort()
 print('Get postachalniky')
 result = make_request("SELECT * FROM postachalniky")
 for i in result:
@@ -135,3 +153,11 @@ def on_connect(client, userdata, flags, rc):
 
 class Communicate(QtCore.QObject):
     reload_all = QtCore.pyqtSignal()
+
+    def set(self,func):
+        # Connect the trigger signal to a slot.
+        self.reload_all.connect(func)
+        print("Connect funcs to reload")
+        # Emit the signal.
+        # self.reload_all.emit()
+

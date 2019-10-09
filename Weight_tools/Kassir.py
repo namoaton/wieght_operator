@@ -1,3 +1,4 @@
+from Weight_tools.Record import Record
 from Weight_tools.tools import *
 
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -138,3 +139,63 @@ class DodatyKassira(QtWidgets.QMainWindow):
             # cur.execute(query)
             # db.commit()
             print(" Додати ", kassir)
+
+
+class RemoveKassir(QtWidgets.QMainWindow):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.init_ui()
+
+    def init_ui(self):
+        self.setMinimumSize(QtCore.QSize(480, 80))
+        self.setWindowTitle("Видалити касира")
+        central_widget = QtWidgets.QWidget(self)
+        self.setCentralWidget(central_widget)
+        self.newfont = QtGui.QFont("Times", 24, QtGui.QFont.Bold)
+        self.kassir_label = QtWidgets.QLabel('ФІО ')
+        self.kassir_label.setFont(self.newfont)
+        self.kassir = QtWidgets.QComboBox()
+        self.kassir.setFont(self.newfont)
+        self.kassir.addItems(kassiry)
+        self.write_button = QtWidgets.QPushButton('Видалити')
+        self.write_button.setFont(self.newfont)
+        kassir_box = QtWidgets.QHBoxLayout()
+        kassir_box.addStretch()
+        kassir_box.addWidget(self.kassir_label)
+        kassir_box.addWidget(self.kassir)
+
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.addLayout(kassir_box)
+        vbox.addWidget(self.write_button)
+        self.write_button.clicked.connect(self.remove_kassir)
+        central_widget.setLayout(vbox)
+
+    def reload_kassir(self):
+        get_kassiry()
+        self.kassir.clear()
+        self.kassir.addItems(kassiry)
+
+    def show(self):
+        super().show()
+        self.reload_kassir()
+
+    def remove_kassir(self):
+        global kassiry
+        kassir = self.kassir.currentText()
+        print("Remove kassir ", kassir)
+        if kassir != "":
+            query = "DELETE FROM kassiry WHERE kassir='%s'" % kassir
+            print(query)
+            print(kassiry)
+            write_to_db(query)
+            Record.comm.reload_all.emit()
+            self.reload_kassir()
+            # write_to_db("INSERT INTO kassiry(kassir,phone) VALUES('%s','%s')" %
+            # (kassir, phone))
+            # query = "INSERT INTO kassiry(kassir,phone) VALUES('%s','%s')" % (
+            #     kassir, phone)
+            # cur.execute(query)
+            # db.commit()
+            # print(" Додати ", kassir)
+
+

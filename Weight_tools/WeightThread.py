@@ -14,6 +14,8 @@ from threading import Thread
 # HOST = ip address of db
 from PyQt5 import QtGui
 
+from Weight_tools.tools import Communicate
+
 configParser = configparser.RawConfigParser()
 configFilePath = "Weight_tools/weight.conf"
 configParser.read(configFilePath)
@@ -54,8 +56,7 @@ class ReadWeightThread(Thread):
             self.lcd_screen.display(str(message.payload.decode("utf-8")))
             self.lcd_signal.emit(str(message.payload.decode("utf-8")))
         if str(message.topic) == "/reload":
-            pass
-            # comm.reload_all.emit()
+            Communicate.reload_all.emit()
 
     def run(self):
         print("Mqtt init ok!")

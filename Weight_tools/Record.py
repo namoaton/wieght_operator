@@ -1,10 +1,14 @@
+import csv
 import datetime
 import json
 from PyQt5 import QtWidgets, QtCore, QtGui
 from Weight_tools.tools import *
 from Weight_tools.Checkable_combo import CheckableComboBox
+# from weights import mqtt_client
+
 
 class Record:
+    comm = None
     def __init__(self):
         self.kassir = ""
         self.avto = ""
@@ -254,6 +258,7 @@ class DisplayRecords(QtWidgets.QMainWindow):
         # self.post_filter.setFont(self.newfont)
 
         # self.post_filter.addItems(sorted(self.postach_list))
+        sorted(self.postach_list)
         for p in sorted(self.postach_list):
             self.post_filter.addItem(p)
         self.filter_box.addWidget(self.post_filter)
@@ -794,7 +799,7 @@ class AddRecord(QtWidgets.QMainWindow):
                 str(date), carnum, brutto, tara, "Ручне Додавання", postach,
                 "{}", 0, 0, 0, 1, str(date), (brutto - tara), 0, 0)
             cur_id = write_to_db(request)
-            mqtt_client.publish("/reload", "1")
+            # mqtt_client.publish("/reload", "1")
             QtWidgets.QMessageBox.about(self, 'Створений запис',
                                         'Створено запис № %d' % cur_id)
             self.brutto.setText("")
@@ -804,7 +809,8 @@ class AddRecord(QtWidgets.QMainWindow):
         else:
             QtWidgets.QMessageBox.about(self, 'Перевірте дані',
                                         'Перевірте дані ')
-        comm.reload_all.emit()
+        Record.comm.reload_all.emit()
+
 
     def cancel(self):
         self.close()
@@ -897,3 +903,42 @@ class RecordEditor(QtWidgets.QMainWindow):
     def print_doc(self):
         print_check(self.id_rec[0])
 
+class RemoveRecord(QtWidgets.QMainWindow):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.init_ui()
+
+    def init_ui(self):
+        self.setMinimumSize(QtCore.QSize(480, 80))
+        self.setWindowTitle("Повернення запису")
+        central_widget = QtWidgets.QWidget(self)
+        self.setCentralWidget(central_widget)
+        self.newfont = QtGui.QFont("Times", 24, QtGui.QFont.Bold)
+        self.num_label = QtWidgets.QLabel('Номер запису')
+        self.num_label.setFont(self.newfont)
+        self.num = QtWidgets.QLineEdit()
+        self.num.setFont(self.newfont)
+        self.write_button = QtWidgets.QPushButton('Видалити')
+        self.write_button.setFont(self.newfont)
+        num_box = QtWidgets.QHBoxLayout()
+        num_box.addStretch()
+        num_box.addWidget(self.num_label)
+        num_box.addWidget(self.num)
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.addLayout(num_box)
+        vbox.addWidget(self.write_button)
+        self.write_button.clicked.connect(self.write)
+        central_widget.setLayout(vbox)
+
+    def write(self):
+        try:
+            num = int(self.num.text())
+            print(num)
+            if num:
+                write_to_db(
+                    "DELETE FROM `records` WHERE id=%d" % num)
+                # mqtt_client.publish("/reload", "1")
+                self.num.setText("")
+                Record.comm.reload_all.emit()
+        except Exception as e:
+            raise e

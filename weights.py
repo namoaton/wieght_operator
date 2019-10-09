@@ -6,12 +6,13 @@ os.chdir(os.path.dirname(__file__))
 from threading import Lock, Thread
 # import serial
 from Weight_tools.Car import AddCar
-from Weight_tools.Kassir import KassiryWindows, DodatyKassira
+from Weight_tools.Kassir import KassiryWindows, DodatyKassira, RemoveKassir
 from Weight_tools.MyDictionaryCompleter import MyDictionaryCompleter
-from Weight_tools.Record import *
+from Weight_tools.Record import Record
+from Weight_tools.Record import  *
 from Weight_tools.WeightThread import ReadWeightThread, EditThread
 from Weight_tools.tools import *
-from Weight_tools.Postachalnik import DodatyPostachalnika, PostachalnikiWindows
+from Weight_tools.Postachalnik import DodatyPostachalnika, PostachalnikiWindows, RemovePostachalnik, PostachEditRecord
 from Weight_tools.DateDialog import *
 from Weight_tools.WaitEditor import EditWaitForArchive
 
@@ -52,8 +53,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # creating EmailBlast widget and setting it as central
         self.window_widget = Window(parent=self)
         self.setCentralWidget(self.window_widget)
-        self.setWindowTitle("Робоче місце оператора ваг")
-        self.setWindowIcon(QtGui.QIcon(os.path.realpath(__file__).replace("wieght.py", "") + 'recycling.png'))
+        self.setWindowTitle("ВінМакулатура")
+        self.setWindowIcon(QtGui.QIcon(os.path.realpath(__file__).replace("wieght.py","")+'recycling.png'))
         print(os.path.realpath(__file__))
         # filling up a menu bar
         self.menubar = self.menuBar()
@@ -68,6 +69,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.record_editor_menu.triggered.connect(self.edit_record)
         self.record_adder_menu = QtWidgets.QAction('Введення документа', self)
         self.record_adder_menu.triggered.connect(self.add_record)
+        self.record_remove_menu = QtWidgets.QAction('Видалити документ', self)
+        self.record_remove_menu.triggered.connect(self.remove_record)
+        self.record_postach_edit_menu = QtWidgets.QAction('Редагувати постачальника в документі', self)
+        self.record_postach_edit_menu.triggered.connect(self.postach_edit_record)
 
         respond = make_request("SELECT dozvol from `dozvol` WHERE id=1")
         if respond[0][0] == 0:
@@ -86,21 +91,28 @@ class MainWindow(QtWidgets.QMainWindow):
         self.record_edit_menu.addAction(self.record_editor_menu)
         self.record_edit_menu.addAction(self.record_adder_menu)
         self.record_edit_menu.addAction(self.record_return_menu)
-
+        self.record_edit_menu.addAction(self.record_remove_menu)
+        self.record_edit_menu.addAction(self.record_postach_edit_menu)
         self.list_postach_menu = QtWidgets.QMenu('Перелік постачальників',
                                                  self)
+        self.remove_postach_menu = QtWidgets.QAction('Видалити постачальника', self)
+        self.remove_postach_menu.triggered.connect(self.remove_postach)
         self.list_postach_action = QtWidgets.QAction('Дивитися', self)
         self.add_postach_to_list = QtWidgets.QAction('Додати', self)
         self.list_postach_action.triggered.connect(self.show_postach)
         self.add_postach_to_list.triggered.connect(self.add_postach)
         self.list_postach_menu.addAction(self.list_postach_action)
         self.list_postach_menu.addAction(self.add_postach_to_list)
+        self.postach_menu.addAction(self.remove_postach_menu)
         self.show_kassir_menu = QtWidgets.QAction('Перелік касирів', self)
         self.add_kassir = QtWidgets.QAction('Додати касира', self)
+        self.remove_kassir_menu = QtWidgets.QAction('Видалити касира', self)
         self.show_kassir_menu.triggered.connect(self.show_kassir)
         self.add_kassir.triggered.connect(self.add_kassiry)
+        self.remove_kassir_menu.triggered.connect(self.remove_kassir)
         self.kassir_menu.addAction(self.show_kassir_menu)
         self.kassir_menu.addAction(self.add_kassir)
+        self.kassir_menu.addAction(self.remove_kassir_menu)
         # self.today_report_menu = QtWidgets.QAction('Отчет за сегодня')
         self.date_report_menu = QtWidgets.QAction('Звіт загальний по даті')
         self.month_report_menu = QtWidgets.QAction('Звіт загальний за період')
@@ -134,7 +146,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.date_report_polymer_bn_menu.triggered.connect(
             self.date_pol_bn_report)
         self.month_report_polymer_bn_menu.triggered.connect(
-            self.period_pol_bn_report)
+        self.period_pol_bn_report)
 
         # self.report_menu.addAction(self.today_report_menu)
         self.report_menu.addAction(self.date_report_menu)
@@ -156,12 +168,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.dialog = PostachalnikiWindows(self)
         self.dodatyPostachalnika = DodatyPostachalnika(self)
         self.dodatyKassira = DodatyKassira(self)
+        self.removeKassir = RemoveKassir(self)
         self.kassiryWindows = KassiryWindows(self)
         self.dateDialog = DateDialog()
         self.doubleDateDialog = DoubleDateDialog()
         self.addCar = AddCar(self)
         self.record_editor = RecordSelector()
         self.ret_record = ReturnRecord()
+        self.rem_record = RemoveRecord()
+        self.edit_postach = PostachEditRecord()
+        self.removePostach = RemovePostachalnik()
         # self.lcd_signal.emit(str(message.payload.decode("utf-8")))
 
     def date_mak_bn_report(self):
@@ -175,14 +191,13 @@ class MainWindow(QtWidgets.QMainWindow):
         result = make_request(query)
         if ok:
             # print(query)
-            DisplayRecords(self, result, date, bn=1).show()
+            DisplayRecords(self, result, date,bn=1).show()
 
     def period_mak_bn_report(self):
         end_date, end_time, begin_date, begin_time, ok = self.doubleDateDialog.getDateTime(
         )
-        query = "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1 AND (" % (
-            '{0:%Y-%m-%d}'.format(end_date),
-            '{0:%Y-%m-%d}'.format(begin_date))
+        query = "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1 AND ("% ('{0:%Y-%m-%d}'.format(end_date),
+               '{0:%Y-%m-%d}'.format(begin_date))
         for m in makulatura:
             query = query + "material LIKE ('%" + m + "%') OR "
         query = query[:-3]
@@ -202,25 +217,34 @@ class MainWindow(QtWidgets.QMainWindow):
         result = make_request(query)
         if ok:
             # print(query)
-            DisplayRecords(self, result, date, bn=2).show()
+            DisplayRecords(self, result, date,bn=2).show()
 
     def period_pol_bn_report(self):
         end_date, end_time, begin_date, begin_time, ok = self.doubleDateDialog.getDateTime(
         )
-        query = "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1 AND (" % (
-            '{0:%Y-%m-%d}'.format(end_date),
-            '{0:%Y-%m-%d}'.format(begin_date))
+        query = "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1 AND ("% ('{0:%Y-%m-%d}'.format(end_date),
+               '{0:%Y-%m-%d}'.format(begin_date))
         for p in polymer:
             query = query + "material LIKE ('%" + p + "%') OR "
         query = query[:-3]
         query = query + ")"
         result = make_request(query)
         if ok:
-            DisplayRecords(self, result, begin_date, end_date, bn=2).show()
+            DisplayRecords(self, result, begin_date, end_date,bn=2).show()
 
     def return_record(self):
         print("return record")
         self.ret_record.show()
+
+    def remove_record(self):
+        print("remove record")
+        self.rem_record.show()
+
+    def postach_edit_record(self):
+        self.edit_postach.show()
+
+    def remove_postach(self):
+        self.removePostach.show()
 
     def allow_record(self):
         respond = make_request("SELECT dozvol from `dozvol` WHERE id=1")
@@ -262,6 +286,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def add_kassiry(self):
         self.dodatyKassira.show()
 
+    def remove_kassir(self):
+        self.removeKassir.show()
+
     def today_report(self):
         self.todayRecords.show()
 
@@ -291,7 +318,7 @@ class MainWindow(QtWidgets.QMainWindow):
             % ('{0:%Y-%m-%d}'.format(end_date),
                '{0:%Y-%m-%d}'.format(begin_date), "%-бн%"))
         if ok:
-            DisplayRecords(self, result, begin_date, end_date, bn=3).show()
+            DisplayRecords(self, result, begin_date, end_date,bn=3).show()
 
     def date_report_bn(self):
         date, time, ok = self.dateDialog.getDateTime()
@@ -299,7 +326,7 @@ class MainWindow(QtWidgets.QMainWindow):
             "SELECT * FROM records WHERE DATE(date) ='%s' AND is_finished = 1 AND is_archived = 1 AND material LIKE ('%s')"
             % ('{0:%Y-%m-%d}'.format(date), "%-бн%"))
         if ok:
-            DisplayRecords(self, result, date, bn=3).show()
+            DisplayRecords(self, result, date,bn=3).show()
 
     def month_report_pr(self):
         end_date, end_time, begin_date, begin_time, ok = self.doubleDateDialog.getDateTime(
@@ -309,7 +336,7 @@ class MainWindow(QtWidgets.QMainWindow):
             % ('{0:%Y-%m-%d}'.format(end_date),
                '{0:%Y-%m-%d}'.format(begin_date), "%-бн%"))
         if ok:
-            DisplayRecords(self, result, begin_date, end_date, bn=4).show()
+            DisplayRecords(self, result, begin_date, end_date,bn=4).show()
 
     def date_report_pr(self):
         date, time, ok = self.dateDialog.getDateTime()
@@ -317,8 +344,7 @@ class MainWindow(QtWidgets.QMainWindow):
             "SELECT * FROM records WHERE DATE(date) ='%s' AND is_finished = 1 AND is_archived = 1 AND material NOT LIKE ('%s')"
             % ('{0:%Y-%m-%d}'.format(date), "%-бн%"))
         if ok:
-            DisplayRecords(self, result, date, bn=4).show()
-
+            DisplayRecords(self, result, date,bn=4).show()
 
 class Window(QtWidgets.QWidget):
     def __init__(self, parent=None):
@@ -326,6 +352,7 @@ class Window(QtWidgets.QWidget):
         self.init_ui()
 
     def init_ui(self):
+        global postachalnik_list
         self.newfont = QtGui.QFont("Arial", 24, QtGui.QFont.Bold)
         self.active_kassir = kassiry[0]
         self.car_num_label = QtWidgets.QLabel('Номер авто')
@@ -345,6 +372,7 @@ class Window(QtWidgets.QWidget):
         print(self.weight.height())
         self.weight.setFixedHeight(100)
         # self.weight.display(str(500))
+        get_kassiry()
         self.kassir = QtWidgets.QComboBox()
         self.kassir.setFont(self.newfont)
         self.kassir.addItems(kassiry)
@@ -374,8 +402,17 @@ class Window(QtWidgets.QWidget):
         self.listfont = QtGui.QFont("Times", 17, QtGui.QFont.Normal)
         self.pending_car_list.setFont(self.listfont)
         self.pending_car_list.addItems(car_list)
+        # self.topframe = QtWidgets.QFrame(self)
+        # self.topframe.setLineWidth(2)
+        # self.topframe.setFrameShape(QtWidgets.QFrame.WinPanel)
+        # self.topframe.setFrameShadow(QtWidgets.QFrame.Raised)
+        # self.splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        # self.splitter.setHandleWidth(1)
+        # self.splitter.addWidget(self.topframe)
         self.pending_car_label = QtWidgets.QLabel('Авто на розвантаженні')
         self.pending_car_label.setFont(self.newfont)
+        self.pending_car_label.setStyleSheet(
+            "color: black;border-style: groove;border-width: 1px; border-color: #a6a7a8")
         self.postachalnik_label = QtWidgets.QLabel("Постачальник")
         self.zasor_label = QtWidgets.QLabel("Засмічення")
         self.zasor_label.setFont(self.newfont)
@@ -396,6 +433,7 @@ class Window(QtWidgets.QWidget):
         # self.material_header.setSectionResizeMode(
         #     QtWidgets.QHeaderView.Stretch)
         # self.material_header.setStretchLastSection(True)
+        get_postachalniky()
         self.postachalnik_label.setFont(self.newfont)
         self.postachalnik_completer = QtWidgets.QCompleter(postachalnik_list)
         self.postachalnik_completer.setCaseSensitivity(
@@ -404,6 +442,7 @@ class Window(QtWidgets.QWidget):
         self.postachalnik.setFixedWidth(350)
         self.postachalnik.setFont(self.newfont)
         self.postachalnik.setCompleter(self.postachalnik_completer)
+
         # NO Archive
         self.wait_for_archive_label = QtWidgets.QLabel(
             'Записи до підтверждення')
@@ -444,7 +483,7 @@ class Window(QtWidgets.QWidget):
                                                     str(i[14])))
             self.wait_for_archive_table.setItem(
                 row_index, 1,
-                QtWidgets.QTableWidgetItem('{0:%Y-%m-%d %H:%M:%S}'.format(
+                QtWidgets.QTableWidgetItem('{0:%d-%m-%Y %H:%M:%S}'.format(
                     i[0])))
             self.wait_for_archive_table.setItem(row_index, 2,
                                                 QtWidgets.QTableWidgetItem(
@@ -484,6 +523,7 @@ class Window(QtWidgets.QWidget):
         # v_box.addLayout(price_box)
         v_box.addLayout(postach_box)
         # v_box.addLayout(zasor_box)
+        # v_box.addWidget(self.splitter)
         v_box.addWidget(self.pending_car_label)
         v_box.addWidget(self.pending_car_list)
         # v_box.addWidget(self.material_table)
@@ -504,12 +544,15 @@ class Window(QtWidgets.QWidget):
         # h_box.addWidget(self.get_weight_button)
         h_box.addWidget(self.write_button)
         v_box.addLayout(h_box)
+
+        # self.topframe.addLayout(v_box)
+
         pending_box = QtWidgets.QHBoxLayout()
         pending_box.addLayout(v_box)
         pending_vbox = QtWidgets.QVBoxLayout()
         pending_vbox.addWidget(self.wait_for_archive_label)
         pending_vbox.addWidget(self.wait_for_archive_table)
-        # pending_vbox.addWidget(self.wait_for_archive_button)
+        pending_vbox.addWidget(self.wait_for_archive_button)
         pending_vbox.addWidget(self.our_cars_label)
         # pending_vbox.addWidget(self.our_cars_reload_button)
         pending_vbox.addWidget(self.our_cars)
@@ -533,13 +576,34 @@ class Window(QtWidgets.QWidget):
         self.record = Record()
         ReadWeightThread(self.weight)
         global comm
-        comm.reload_all.connect(self.reload_all)
+        comm.set(self.reload_all)
+        Record.comm = comm
         # EditThread(self.wait_for_archive_table)
+
+    def update_completer_postach(self):
+        global postachalnik_list
+        get_postachalniky()
+        self.postachalnik_completer = QtWidgets.QCompleter(postachalnik_list)
+        self.postachalnik_completer.setCaseSensitivity(
+            QtCore.Qt.CaseInsensitive)
+        self.postachalnik.setCompleter(self.postachalnik_completer)
 
     def reload_all(self):
         self.reload_pending()
         self.reload_archive()
         self.our_cars_reload()
+        self.reload_kassiry()
+        self.update_completer_postach()
+        # postachalnik_list=[]
+        # result = make_request("SELECT * FROM postachalniky")
+        # for i in result:
+        #     postachalnik_list.append(i[0].lower())
+
+    def reload_kassiry(self):
+        global kassiry
+        get_kassiry()
+        self.kassir.clear()  # delete all items from comboBox
+        self.kassir.addItems(kassiry)
 
     def archiveEdit(self):
         print("Achive clicked")
@@ -627,7 +691,8 @@ class Window(QtWidgets.QWidget):
         print(num)
         try:
             self.car_num.setText(num)
-            self.postachalnik.setText("Вінмакулатура")
+            # self.postachalnik.setText("Вінмакулатура")
+            self.postachalnik.setText("")
         except Exception as e:
             print('Error')
 
@@ -652,6 +717,8 @@ class Window(QtWidgets.QWidget):
                 self.materials_json_value[key]['weight'])
         print("Total json sum is ", total_json_values_sum)
         # check if postachalnik in list
+        if self.postachalnik.text() == "":
+            return
         self.record.postachalnik = self.postachalnik.text()
         result = make_request("SELECT name FROM postachalniky WHERE name='%s'"
                               % self.record.postachalnik)

@@ -1,4 +1,7 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
+
+from Weight_tools.Record import Record
+from Weight_tools.WaitEditor import EditWaitForArchive
 from Weight_tools.tools import *
 
 
@@ -195,3 +198,95 @@ class PostachalnikiWindows(QtWidgets.QMainWindow):
             self.table.resizeColumnsToContents()
             self.table.itemChanged.connect(self.changed)
 
+class RemovePostachalnik(QtWidgets.QMainWindow):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.init_ui()
+
+    def init_ui(self):
+        global postachalnik_list
+        self.setMinimumSize(QtCore.QSize(480, 80))
+        self.setWindowTitle("Видалити касира")
+        central_widget = QtWidgets.QWidget(self)
+        self.setCentralWidget(central_widget)
+        self.newfont = QtGui.QFont("Times", 24, QtGui.QFont.Bold)
+        self.postachalnik_label = QtWidgets.QLabel('ФІО ')
+        self.postachalnik_label.setFont(self.newfont)
+        get_postachalniky()
+        self.postachalnik = QtWidgets.QComboBox()
+        self.postachalnik.setFont(self.newfont)
+        self.postachalnik.addItems(postachalnik_list)
+        self.write_button = QtWidgets.QPushButton('Видалити')
+        self.write_button.setFont(self.newfont)
+        postachalnik_box = QtWidgets.QHBoxLayout()
+        postachalnik_box.addStretch()
+        postachalnik_box.addWidget(self.postachalnik_label)
+        postachalnik_box.addWidget(self.postachalnik)
+
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.addLayout(postachalnik_box)
+        vbox.addWidget(self.write_button)
+        self.write_button.clicked.connect(self.remove_postachalnik)
+        central_widget.setLayout(vbox)
+
+    def reload_postachalnik(self):
+        get_postachalniky()
+        global postachalnik_list
+        self.postachalnik.clear()
+        self.postachalnik.addItems(postachalnik_list)
+
+    def show(self):
+        super().show()
+        self.reload_postachalnik()
+
+    def remove_postachalnik(self):
+        global postachalniky
+        postachalnik = self.postachalnik.currentText()
+        print("Remove postachalnik ", postachalnik)
+        if postachalnik != "":
+            query = "DELETE FROM postachalniky WHERE name='%s'" % postachalnik
+            print(query)
+            print(postachalnik)
+            write_to_db(query)
+            Record.comm.reload_all.emit()
+            self.reload_postachalnik()
+
+class PostachEditRecord(QtWidgets.QMainWindow):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.init_ui()
+
+    def init_ui(self):
+        self.setMinimumSize(QtCore.QSize(480, 80))
+        self.setWindowTitle("Повернення запису")
+        central_widget = QtWidgets.QWidget(self)
+        self.setCentralWidget(central_widget)
+        self.newfont = QtGui.QFont("Times", 24, QtGui.QFont.Bold)
+        self.num_label = QtWidgets.QLabel('Номер запису')
+        self.num_label.setFont(self.newfont)
+        self.num = QtWidgets.QLineEdit()
+        self.num.setFont(self.newfont)
+        self.write_button = QtWidgets.QPushButton('Редагувати')
+        self.write_button.setFont(self.newfont)
+        num_box = QtWidgets.QHBoxLayout()
+        num_box.addStretch()
+        num_box.addWidget(self.num_label)
+        num_box.addWidget(self.num)
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.addLayout(num_box)
+        vbox.addWidget(self.write_button)
+        self.write_button.clicked.connect(self.edit)
+        central_widget.setLayout(vbox)
+
+    def edit(self):
+        try:
+            num = int(self.num.text())
+            print(num)
+            if num:
+                r = make_request("SELECT * FROM records WHERE id =%s" % num)
+                edit_rec =EditWaitForArchive(self,result = r,postach_edit=1,index=num)
+                edit_rec.show()
+                Record.comm.reload_all.emit()
+                # self.hide()
+        except Exception as e:
+            raise e

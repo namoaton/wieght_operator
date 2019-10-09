@@ -1,3 +1,4 @@
+from Weight_tools.Record import Record
 from Weight_tools.tools import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -41,6 +42,6 @@ class AddCar(QtWidgets.QMainWindow):
             # db.commit()
             print(" Додати ", car_num)
             self.procDone.emit()
-            # comm.reload_all.emit()
+            Record.comm.reload_all.emit()
             self.close()
 
