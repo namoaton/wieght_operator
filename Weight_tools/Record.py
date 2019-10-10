@@ -687,7 +687,7 @@ class ReturnRecord(QtWidgets.QMainWindow):
             if num:
                 write_to_db(
                     "UPDATE `records` SET is_archived=0 WHERE id=%d" % num)
-                mqtt_client.publish("/reload", "1")
+                # mqtt_client.publish("/reload", "1")
         except Exception as e:
             raise e
         # if postach != "":
