@@ -3,8 +3,8 @@ import configparser
 
 from PyQt5 import QtCore
 from tabulate import tabulate
-
-
+import json
+import win32api
 
 configParser = configparser.RawConfigParser()
 configFilePath = "Weight_tools/weight.conf"
