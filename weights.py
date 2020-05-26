@@ -38,8 +38,8 @@ MQTT_CLIENT = configParser.get('CONFIG', 'MQTT_CLIENT')
 
 mqtt_client = mqtt.Client(MQTT_CLIENT)
 mqtt_client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
-# mqtt_client.on_connect = on_connect
-# mqtt_client.connect(host,port=1883, keepalive=60)
+mqtt_client.on_connect = on_connect
+mqtt_client.connect(host,port=1883, keepalive=60)
 comm = Communicate()
 
 threadLock = Lock()
@@ -395,6 +395,9 @@ class Window(QtWidgets.QWidget):
         self.write_button.setFont(self.newfont)
         self.entrance_checkbox = QtWidgets.QCheckBox("В'їзд")
         self.entrance_checkbox.setFont(self.newfont)
+
+        self.rashod_checkbox = QtWidgets.QCheckBox("Видача")
+        self.rashod_checkbox.setFont(self.newfont)
         # self.entrance_checkbox.toggle()
         # self.pay_checkbox = QtWidgets.QCheckBox('Сплачено')
         # self.pay_checkbox.setFont(self.newfont)
@@ -503,6 +506,7 @@ class Window(QtWidgets.QWidget):
         # self.pay_checkbox.toggle()
         cb_box = QtWidgets.QHBoxLayout()
         cb_box.addWidget(self.entrance_checkbox)
+        cb_box.addWidget(self.rashod_checkbox)
         # cb_box.addWidget(self.pay_checkbox)
         price_box = QtWidgets.QHBoxLayout()
         # price_box.addStretch()
@@ -799,7 +803,7 @@ class Window(QtWidgets.QWidget):
                 print('Выезд')
                 self.record.if_finished = 1
                 result = make_request(
-                    "SELECT * FROM records WHERE car_num ='%s' AND is_finished = 0"
+                    "SELECT * FROM records WHERE car_num ='%s' AND is_finished = 0 AND is_rashod = 0"
                     % self.record.avto)
                 print(result)
                 if (len(result) == 0):

@@ -1,7 +1,11 @@
 import configparser
 import socket
 import time
+import paho.mqtt.client as mqtt
 from threading import Thread
+from PyQt5 import QtGui
+from Weight_tools.tools import Communicate
+import configparser
 # from weights import comm
 
 # Create conf file in  weight.conf
@@ -12,16 +16,30 @@ from threading import Thread
 # USER = db_username
 # PASSWORD= db_password
 # HOST = ip address of db
-from PyQt5 import QtGui
+configParser = configparser.RawConfigParser()
+configFilePath = "Weight_tools/weight.conf"
+configParser.read(configFilePath)
+host = configParser.get('CONFIG', 'HOST')
+MQTT_USER = configParser.get('CONFIG', 'MQTT_USER')
+MQTT_PASSWORD = configParser.get('CONFIG', 'MQTT_PASSWORD')
+MQTT_CLIENT = configParser.get('CONFIG', 'MQTT_CLIENT')
+UDP_IP = configParser.get('CONFIG', 'UDP_IP')
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        client.connected_flag = True
+        client.subscribe("/vesy")
+        print("Connected with code %d" % rc)
 
-from Weight_tools.tools import Communicate
+mqtt_client = mqtt.Client(MQTT_CLIENT)
+mqtt_client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
+mqtt_client.on_connect = on_connect
+mqtt_client.connect(host,port=1883, keepalive=60)
 
 configParser = configparser.RawConfigParser()
 configFilePath = "Weight_tools/weight.conf"
 configParser.read(configFilePath)
-UDP_IP = configParser.get('CONFIG', 'UDP_IP')
-UDP_PORT = int(configParser.get('CONFIG', 'UDP_PORT'))
 
+UDP_PORT = int(configParser.get('CONFIG', 'UDP_PORT'))
 
 class ReadWeightThread(Thread):
     def __init__(self, lcd_screen):
@@ -40,16 +58,16 @@ class ReadWeightThread(Thread):
         client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.daemon = True
         self.lcd_screen = lcd_screen
-        # mqtt_client.subscribe("/vesy")
-        # mqtt_client.subscribe("/reload")
-        # mqtt_client.on_message = self.on_message
-        # mqtt_client.loop_start()
+        mqtt_client.subscribe("/vesy")
+        mqtt_client.subscribe("/reload")
+        mqtt_client.on_message = self.on_message
+        mqtt_client.loop_start()
         self.start()
 
     def on_message(self, client, userdata, message):
         # time.sleep(1)
-        # print("Topic: " + str(message.topic))
-        # print("Message: " + str(message.payload))
+        print("Topic: " + str(message.topic))
+        print("Message: " + str(message.payload))
         print("received message =", str(message.payload.decode("utf-8")))
         print(str(message.topic))
         if str(message.topic) == "/vesy":
@@ -60,14 +78,14 @@ class ReadWeightThread(Thread):
 
     def run(self):
         print("Mqtt init ok!")
-        # mqtt_client.loop_forever(timeout=1.0, max_packets=1, retry_first_connection=False)
+        mqtt_client.loop_forever(timeout=1.0, max_packets=1, retry_first_connection=True)
 
         while True:
-            data, addr = self.sock.recvfrom(1024)  # buffer size is 1024 bytes
-            w = int(
-                str(data).replace(":", "").replace("'", "").replace("b", ""))
-            print("received message:", str(data).replace(":", ""))
-            self.lcd_screen.display(w)
+            # data, addr = self.sock.recvfrom(1024)  # buffer size is 1024 bytes
+            # w = int(
+            #     str(data).replace(":", "").replace("'", "").replace("b", ""))
+            # print("received message:", str(data).replace(":", ""))
+            # self.lcd_screen.display(w)
             # mqtt_client.loop_start()
             # self.lcd_screen.display(read_weight())
             # self.mqtt_client.loop()
