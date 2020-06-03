@@ -1078,8 +1078,11 @@ class Window(QtWidgets.QWidget):
                 self.price.setText(str(result[0][7]))
                 self.postachalnik.setText(result[0][5])
                 self.zasor.setText(str(result[0][13]))
+                #set rashod checkbox
                 if result[0][16] == 1:
                     self.rashod_checkbox.setChecked(True)
+                else:
+                    self.rashod_checkbox.setChecked(False)
                 material_json_dumps = json.loads(result[0][6].replace(
                     '\"', '"'))
                 print(material_json_dumps)
