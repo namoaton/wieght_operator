@@ -1,11 +1,14 @@
 import pymysql as sql
 import configparser
 
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 from tabulate import tabulate
 import json
-import win32api
-
+#import win32api
+IN_COLOR = QtGui.QColor(186, 224, 194)
+OUT_COLOR = QtGui.QColor(186, 200, 224)
+IN_SIGN = "+ "
+OUT_SIGN = "- "
 configParser = configparser.RawConfigParser()
 configFilePath = "Weight_tools/weight.conf"
 configParser.read(configFilePath)

@@ -1,7 +1,8 @@
 import os
 import sys
-os.chdir(os.path.dirname(__file__))
+import tempfile
 
+os.chdir(os.path.dirname(__file__))
 
 from threading import Lock, Thread
 # import serial
@@ -9,7 +10,7 @@ from Weight_tools.Car import AddCar
 from Weight_tools.Kassir import KassiryWindows, DodatyKassira, RemoveKassir
 from Weight_tools.MyDictionaryCompleter import MyDictionaryCompleter
 from Weight_tools.Record import Record
-from Weight_tools.Record import  *
+from Weight_tools.Record import *
 from Weight_tools.WeightThread import ReadWeightThread, EditThread
 from Weight_tools.tools import *
 from Weight_tools.Postachalnik import DodatyPostachalnika, PostachalnikiWindows, RemovePostachalnik, PostachEditRecord
@@ -39,7 +40,7 @@ MQTT_CLIENT = configParser.get('CONFIG', 'MQTT_CLIENT')
 mqtt_client = mqtt.Client(MQTT_CLIENT)
 mqtt_client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
 mqtt_client.on_connect = on_connect
-mqtt_client.connect(host,port=1883, keepalive=60)
+mqtt_client.connect(host, port=1883, keepalive=60)
 comm = Communicate()
 
 threadLock = Lock()
@@ -54,7 +55,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.window_widget = Window(parent=self)
         self.setCentralWidget(self.window_widget)
         self.setWindowTitle("ВінМакулатура")
-        self.setWindowIcon(QtGui.QIcon(os.path.realpath(__file__).replace("wieght.py","")+'recycling.png'))
+        self.setWindowIcon(QtGui.QIcon(os.path.realpath(__file__).replace("wieght.py", "") + 'recycling.png'))
         print(os.path.realpath(__file__))
         # filling up a menu bar
         self.menubar = self.menuBar()
@@ -146,7 +147,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.date_report_polymer_bn_menu.triggered.connect(
             self.date_pol_bn_report)
         self.month_report_polymer_bn_menu.triggered.connect(
-        self.period_pol_bn_report)
+            self.period_pol_bn_report)
 
         # self.report_menu.addAction(self.today_report_menu)
         self.report_menu.addAction(self.date_report_menu)
@@ -191,13 +192,14 @@ class MainWindow(QtWidgets.QMainWindow):
         result = make_request(query)
         if ok:
             # print(query)
-            DisplayRecords(self, result, date,bn=1).show()
+            DisplayRecords(self, result, date, bn=1).show()
 
     def period_mak_bn_report(self):
         end_date, end_time, begin_date, begin_time, ok = self.doubleDateDialog.getDateTime(
         )
-        query = "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1 AND ("% ('{0:%Y-%m-%d}'.format(end_date),
-               '{0:%Y-%m-%d}'.format(begin_date))
+        query = "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1 AND (" % (
+        '{0:%Y-%m-%d}'.format(end_date),
+        '{0:%Y-%m-%d}'.format(begin_date))
         for m in makulatura:
             query = query + "material LIKE ('%" + m + "%') OR "
         query = query[:-3]
@@ -217,20 +219,21 @@ class MainWindow(QtWidgets.QMainWindow):
         result = make_request(query)
         if ok:
             # print(query)
-            DisplayRecords(self, result, date,bn=2).show()
+            DisplayRecords(self, result, date, bn=2).show()
 
     def period_pol_bn_report(self):
         end_date, end_time, begin_date, begin_time, ok = self.doubleDateDialog.getDateTime(
         )
-        query = "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1 AND ("% ('{0:%Y-%m-%d}'.format(end_date),
-               '{0:%Y-%m-%d}'.format(begin_date))
+        query = "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1 AND (" % (
+        '{0:%Y-%m-%d}'.format(end_date),
+        '{0:%Y-%m-%d}'.format(begin_date))
         for p in polymer:
             query = query + "material LIKE ('%" + p + "%') OR "
         query = query[:-3]
         query = query + ")"
         result = make_request(query)
         if ok:
-            DisplayRecords(self, result, begin_date, end_date,bn=2).show()
+            DisplayRecords(self, result, begin_date, end_date, bn=2).show()
 
     def return_record(self):
         print("return record")
@@ -318,7 +321,7 @@ class MainWindow(QtWidgets.QMainWindow):
             % ('{0:%Y-%m-%d}'.format(end_date),
                '{0:%Y-%m-%d}'.format(begin_date), "%-бн%"))
         if ok:
-            DisplayRecords(self, result, begin_date, end_date,bn=3).show()
+            DisplayRecords(self, result, begin_date, end_date, bn=3).show()
 
     def date_report_bn(self):
         date, time, ok = self.dateDialog.getDateTime()
@@ -326,7 +329,7 @@ class MainWindow(QtWidgets.QMainWindow):
             "SELECT * FROM records WHERE DATE(date) ='%s' AND is_finished = 1 AND is_archived = 1 AND material LIKE ('%s')"
             % ('{0:%Y-%m-%d}'.format(date), "%-бн%"))
         if ok:
-            DisplayRecords(self, result, date,bn=3).show()
+            DisplayRecords(self, result, date, bn=3).show()
 
     def month_report_pr(self):
         end_date, end_time, begin_date, begin_time, ok = self.doubleDateDialog.getDateTime(
@@ -336,7 +339,7 @@ class MainWindow(QtWidgets.QMainWindow):
             % ('{0:%Y-%m-%d}'.format(end_date),
                '{0:%Y-%m-%d}'.format(begin_date), "%-бн%"))
         if ok:
-            DisplayRecords(self, result, begin_date, end_date,bn=4).show()
+            DisplayRecords(self, result, begin_date, end_date, bn=4).show()
 
     def date_report_pr(self):
         date, time, ok = self.dateDialog.getDateTime()
@@ -344,7 +347,8 @@ class MainWindow(QtWidgets.QMainWindow):
             "SELECT * FROM records WHERE DATE(date) ='%s' AND is_finished = 1 AND is_archived = 1 AND material NOT LIKE ('%s')"
             % ('{0:%Y-%m-%d}'.format(date), "%-бн%"))
         if ok:
-            DisplayRecords(self, result, date,bn=4).show()
+            DisplayRecords(self, result, date, bn=4).show()
+
 
 class Window(QtWidgets.QWidget):
     def __init__(self, parent=None):
@@ -582,6 +586,7 @@ class Window(QtWidgets.QWidget):
         global comm
         comm.set(self.reload_all)
         Record.comm = comm
+        self.reload_all()
         # EditThread(self.wait_for_archive_table)
 
     def update_completer_postach(self):
@@ -625,10 +630,23 @@ class Window(QtWidgets.QWidget):
         self.pending_car_list.clear()
         car_list = []
         result = make_request("SELECT * FROM records WHERE is_finished = 0")
+        row_index = 0
+        color = IN_COLOR
+        sign = IN_SIGN
         for i in result:
             car_list.append(i[1])
-        print(car_list)
-        self.pending_car_list.addItems(car_list)
+            if i[16]:
+                color = OUT_COLOR
+                sign = OUT_SIGN
+            else:
+                color = IN_COLOR
+                sign = IN_SIGN
+            self.pending_car_list.addItem(i[1])
+            self.pending_car_list.item(row_index).setBackground(color)
+            row_index = row_index + 1
+
+        # print(car_list)
+        # self.pending_car_list.addItems(car_list)
 
     # @QtCore.pyqtSlot(str)
     def reload_archive(self):
@@ -640,6 +658,7 @@ class Window(QtWidgets.QWidget):
         print(wait_for_archive_list)
         self.wait_for_archive_table.setRowCount(0)
         row_index = 0
+        color = IN_COLOR
         for i in wait_for_archive_list:
             print(len(i))
             self.wait_for_archive_table.insertRow(row_index)
@@ -656,6 +675,16 @@ class Window(QtWidgets.QWidget):
             self.wait_for_archive_table.setItem(row_index, 3,
                                                 QtWidgets.QTableWidgetItem(
                                                     i[1]))
+            if i[16]:
+                color = OUT_COLOR
+                sign = OUT_SIGN
+            else:
+                color = IN_COLOR
+                sign = IN_SIGN
+            self.wait_for_archive_table.item(row_index, 0).setBackground(color)
+            self.wait_for_archive_table.item(row_index, 1).setBackground(color)
+            self.wait_for_archive_table.item(row_index, 2).setBackground(color)
+            self.wait_for_archive_table.item(row_index, 3).setBackground(color)
             row_index = row_index + 1
 
     def materialEnterClicked(self):
@@ -700,29 +729,126 @@ class Window(QtWidgets.QWidget):
         except Exception as e:
             print('Error')
 
-    def write_data(self):
-        self.record.clear_values()
-        self.record.avto = self.car_num.text()
-        # get values from table
-        self.materials_json_value = {}
-        # total_rows = self.material_table.rowCount()
-        # for i in range(0, total_rows):
-        #     self.materials_json_value[self.material_table.item(
-        #         i, 0).text()] = {
-        #             "weight": int(self.material_table.item(i, 1).text()),
-        #             "price": self.price.text()
-        #         }
-        # print(self.materials_json_value)
-        dumps = json.dumps(self.materials_json_value, sort_keys=True, indent=4)
-        print(json.loads(dumps))
-        total_json_values_sum = 0
-        for key in self.materials_json_value.keys():
-            total_json_values_sum = total_json_values_sum + int(
-                self.materials_json_value[key]['weight'])
-        print("Total json sum is ", total_json_values_sum)
-        # check if postachalnik in list
-        if self.postachalnik.text() == "":
+    def get_print_string(self, diff_time_str, data):
+        if self.rashod_checkbox.isChecked():
+            brutto = self.record.tara
+            tara = self.record.brutto
+        else:
+            brutto = self.record.brutto
+            tara = self.record.tara
+        self.record.netto = brutto - tara
+        printstring = "+ Касир : %s\n+ Номер авто: %s\n+ Постачальник: %s\n+ Матеріал: %s\n+ Брутто: %d кг\n+ Тара: %d кг\n+ Нетто: %d кг\n+ Засмічення в кг: %d \n+ Ціна за кг: %.2f\n+ До сплати(грн): %.2f\n+ Дата: %s\n+ Час розвантаження: %s\n" % (
+            self.record.kassir,
+            self.record.avto,
+            self.record.postachalnik,
+            self.record.material,
+            brutto,
+            tara,
+            self.record.netto,
+            self.record.zasor,
+            self.record.price,
+            (self.record.netto * self.record.
+             price) - self.record.zasor, data,
+            diff_time_str)
+        return printstring
+
+    def get_enter_time(self):
+        result = make_request(
+            "SELECT * FROM records WHERE car_num ='%s' AND is_finished = 0"
+            % self.record.avto)
+        if len(result) == 0:
+            return None
+        return result[0][0]
+
+    def update_entrance_record_by_kassir(self):
+        query = "UPDATE records SET tara = %d, is_enter = %d, is_oplacheno = %d ,is_finished = %d, exit_time=now(), netto = %d, zasor = %d WHERE car_num = '%s'   AND is_finished = 0 " % (
+            self.record.vaga,
+            self.record.is_enter,
+            self.record.is_oplacheno,
+            self.record.if_finished,
+            self.record.netto,
+            self.record.zasor,
+            self.record.avto)
+        print(query)
+        write_to_db(query)
+
+    def confirm_window(self, weight_before):
+        kassir_question = QtWidgets.QMessageBox()
+        kassir_question.setIcon(
+            QtWidgets.QMessageBox.Question)
+        kassir_question.setWindowTitle("Записати?")
+        dialogfont = QtGui.QFont(
+            "Times", 17, QtGui.QFont.Normal)
+        kassir_question.setFont(dialogfont)
+
+        result = make_request("SELECT now()")
+        exit_time = result[0][0]
+        enter_time = self.get_enter_time()
+        if enter_time == None:
             return
+        diff_time = exit_time - enter_time
+        print(diff_time)
+        if self.rashod_checkbox.isChecked():
+            vaga = self.record.vaga - weight_before
+        else:
+            vaga = weight_before - self.record.vaga
+        data = '{0:%Y-%m-%d %H:%M:%S}'.format(
+            datetime.datetime.now())
+        diff_time_str = str(diff_time)
+        printstring = self.get_print_string(diff_time_str, data)
+
+        kassir_question.setText(printstring)
+        kassir_question.setStandardButtons(
+            QtWidgets.QMessageBox.Yes
+            | QtWidgets.QMessageBox.No)
+        printButton = kassir_question.addButton(
+            'Друкувати та записати',
+            QtWidgets.QMessageBox.ActionRole)
+        buttonY = kassir_question.button(
+            QtWidgets.QMessageBox.Yes)
+        buttonY.setText('Записати')
+        buttonN = kassir_question.button(
+            QtWidgets.QMessageBox.No)
+        buttonN.setText('Відміна')
+        kassir_question.exec_()
+        if kassir_question.clickedButton(
+        ) == buttonY:
+            print('Yes clicked.')
+            self.update_entrance_record_by_kassir()
+            car_list.remove(self.record.avto)
+            # clear fields
+            self.postachalnik.clear()
+            self.car_num.clear()
+            self.zasor.clear()
+        if kassir_question.clickedButton(
+        ) == buttonN:
+            print('No clicked.')
+        if kassir_question.clickedButton(
+        ) == printButton:
+            print('Print clicked.')
+            self.update_entrance_record_by_kassir()
+            filename = tempfile.mktemp(".txt")
+            open(filename, "w").write(printstring)
+            print(printstring)
+
+            query = "UPDATE records SET tara = %d, is_enter = %d, is_oplacheno = %d ,is_finished =%d, exit_time=now() WHERE car_num = '%s'" % (
+                self.record.vaga,
+                self.record.is_enter,
+                self.record.is_oplacheno,
+                self.record.if_finished,
+                self.record.avto)
+            write_to_db(query)
+            # win32api.ShellExecute(
+            #     0, "printto", filename, '"%s"' %
+            #     win32print.GetDefaultPrinter(),
+            #     ".", 0)
+            car_list.remove(self.record.avto)
+            self.postachalnik.clear()
+            self.car_num.clear()
+            # self.material_table.setRowCount(0)
+            self.zasor.clear()
+
+    def append_postachalnik(self):
         self.record.postachalnik = self.postachalnik.text()
         result = make_request("SELECT name FROM postachalniky WHERE name='%s'"
                               % self.record.postachalnik)
@@ -731,16 +857,14 @@ class Window(QtWidgets.QWidget):
             write_to_db(
                 "INSERT INTO postachalniky(name,car_num) VALUES('%s','%s')" %
                 (self.record.postachalnik, self.record.avto))
-            # query = "INSERT INTO postachalniky(name,car_num) VALUES('%s','%s')" % (
-            #     self.record.postachalnik, self.record.avto)
-            # cur.execute(query)
-            # db.commit()
             postachalnik_list.append(self.record.postachalnik)
             self.postachalnik_completer = QtWidgets.QCompleter(
                 postachalnik_list)
             self.postachalnik_completer.setCaseSensitivity(
                 QtCore.Qt.CaseInsensitive)
             self.postachalnik.setCompleter(self.postachalnik_completer)
+
+    def append_material(self):
         result = make_request(
             "SELECT material FROM materials WHERE material='%s'" %
             self.record.material)
@@ -748,14 +872,166 @@ class Window(QtWidgets.QWidget):
         if len(result) == 0 and self.record.material != "":
             write_to_db("INSERT INTO materials(material) VALUES('%s')" %
                         self.record.material)
-            # query = "INSERT INTO materials(material) VALUES('%s')" % self.record.material
-            # cur.execute(query)
-            # db.commit()
             materials.append(self.record.material)
             self.material_completer = QtWidgets.QCompleter(materials)
             self.material_completer.setCaseSensitivity(
                 QtCore.Qt.CaseInsensitive)
             self.material.setCompleter(self.material_completer)
+
+    def check_exit_weight(self, old_weight, current_weight):
+        result = make_request(
+            "SELECT * FROM records WHERE car_num ='%s' AND is_finished = 0"
+            % self.record.avto)
+        print(result)
+        if (len(result) == 0):
+            if (self.rashod_checkbox.isChecked()):
+                QtWidgets.QMessageBox.about(
+                    self, 'Направте авто на завантаження',
+                    'Направте на завантаження')
+            else:
+                QtWidgets.QMessageBox.about(
+                    self, 'Направте авто на розвантаження',
+                    'Направте на розвантаження')
+            return False
+        weight_before = result[0][2]
+        self.record.brutto = weight_before
+        self.record.tara = self.record.vaga
+        print(weight_before, self.record.vaga)
+        print("Rashod is checked",self.rashod_checkbox.isChecked())
+        if self.rashod_checkbox.isChecked():
+            return weight_before <= self.record.vaga
+        return weight_before >= self.record.vaga
+
+    def check_record_weight(self, old_weight, current_weight):
+        print("record weight_before = ", old_weight)
+        vaga = 0
+        total_json_values_sum = self.get_total_json_values(self.materials_json_value)
+        if self.rashod_checkbox.isChecked():
+            vaga = self.record.vaga - old_weight
+        else:
+            vaga = old_weight - self.record.vaga
+        self.record.netto = vaga
+        return total_json_values_sum > self.record.netto
+
+
+    def auto_entrance(self):
+        self.record.is_enter = 1
+        print("В'їзд")
+        self.record.is_oplacheno = 0
+        # check if car unloaded
+        result = make_request(
+            "SELECT * FROM records WHERE car_num ='%s' AND is_finished = 0"
+            % self.record.avto)
+        print(result)
+        if (len(result) > 0):
+            QtWidgets.QMessageBox.about(self, 'Авто на розвантаженні',
+                                        'Авто на розвантаженні')
+            return False
+
+        car_list.append(self.record.avto)
+        self.pending_car_list.clear()
+        self.pending_car_list.addItems(car_list)
+        print(self.record.material)
+        is_rashod = 0
+        if (self.rashod_checkbox.isChecked()):
+            is_rashod = 1
+        query = "INSERT INTO records (car_num, brutto,kassir,postachalnik,material,price,is_enter,is_oplacheno,is_finished,zasor,is_rashod) VALUES('%s',%d,'%s','%s','%s',%f,%d,%d,%d,%d,%d)" % (
+            self.record.avto, self.record.vaga, self.record.kassir,
+            self.record.postachalnik, self.record.material,
+            self.record.price, self.record.is_enter,
+            self.record.is_oplacheno, self.record.if_finished,
+            self.record.zasor, is_rashod)
+        write_to_db(query)
+        # self.material_table.setRowCount(0)
+        self.record.clear_values()
+        return True
+
+    def auto_exit(self):
+        self.record.is_enter = 0
+        # if self.pay_checkbox.isChecked():
+        #     self.record.is_oplacheno = 1
+        print('Выезд')
+        self.record.if_finished = 1
+        result = make_request(
+            "SELECT * FROM records WHERE car_num ='%s' AND is_finished = 0"
+            % self.record.avto)
+        print(result)
+        if (len(result) == 0):
+            QtWidgets.QMessageBox.about(
+                self, 'Направте авто на розвантаження',
+                'Направте на розвантаження')
+            return False
+
+        weight_before = result[0][2]
+        self.record.brutto = weight_before
+        self.record.tara = self.record.vaga
+        enter_time = result[0][0]
+        print(weight_before, self.record.vaga)
+        if self.check_exit_weight(weight_before,self.record.vaga):
+            # self.pending_car_list.addItem(self.record.avto)
+            for i in car_list:
+                if i == self.record.avto:
+                    print(i, self.record.avto)
+                    try:
+                        result = make_request("SELECT now()")
+                        exit_time = result[0][0]
+                        diff_time = exit_time - enter_time
+                        print(diff_time)
+                        print("weight_before = ", weight_before)
+                        vaga = weight_before - self.record.vaga
+                        self.record.netto = vaga
+                        # total_json_values_sum = self.get_total_json_values(self.materials_json_value)
+                        # if self.check_record_weight(total_json_values_sum, self.record.netto):
+                        #     QtWidgets.QMessageBox.about(
+                        #         self,
+                        #         'Вага у таблиці більше веса нетто',
+                        #         'Вага (%d) у таблиці \n\rбільше ваги нетто (%d)'
+                        #         % (total_json_values_sum,
+                        #            self.record.netto))
+                        #     # return
+                        # data = '{0:%d-%m-%Y %H:%M:%S}'.format(
+                        #     datetime.datetime.now())
+                        # diff_time_str = str(diff_time)
+                        self.confirm_window(weight_before)
+
+                        self.pending_car_list.clear()
+                        self.pending_car_list.addItems(car_list)
+                        self.record.clear_values()
+                        return True
+                    except Exception as e:
+                        print(e)
+                        QtWidgets.QMessageBox.about(
+                            self, 'Авто не було на розвантаженні',
+                            'Направте на розвантаження')
+                        return False
+        else:
+            QtWidgets.QMessageBox.about(
+                self, 'Проблема з вагою авто',
+                'Вага до розвантаження більше ніж після')
+            return False
+
+    def get_total_json_values(self, material_json):
+        total_json_values_sum = 0
+        for key in material_json.keys():
+            total_json_values_sum = total_json_values_sum + int(
+                material_json[key]['weight'])
+        print("Total json sum is ", total_json_values_sum)
+        return total_json_values_sum
+
+    def write_data(self):
+        self.record.clear_values()
+        self.record.avto = self.car_num.text()
+        # get values from table
+        self.materials_json_value = {}
+        dumps = json.dumps(self.materials_json_value, sort_keys=True, indent=4)
+        print(json.loads(dumps))
+        # check if postachalnik in list
+        if self.postachalnik.text() == "":
+            return
+
+        self.append_postachalnik()
+        self.append_material()
+
         if self.price.text() != '':
             self.record.price = float(self.price.text().replace(',', '.'))
             print('price is:', self.record.price)
@@ -771,204 +1047,9 @@ class Window(QtWidgets.QWidget):
             self.materials_json_value, ensure_ascii=False)
         if self.record.is_ok():
             if self.entrance_checkbox.isChecked():
-                self.record.is_enter = 1
-                print("В'їзд")
-                self.record.is_oplacheno = 0
-                # check if car unloaded
-                result = make_request(
-                    "SELECT * FROM records WHERE car_num ='%s' AND is_finished = 0"
-                    % self.record.avto)
-                print(result)
-                if (len(result) > 0):
-                    QtWidgets.QMessageBox.about(self, 'Авто на розвантаженні',
-                                                'Авто на розвантаженні')
-                else:
-                    car_list.append(self.record.avto)
-                    self.pending_car_list.clear()
-                    self.pending_car_list.addItems(car_list)
-                    print(self.record.material)
-                    query = "INSERT INTO records (car_num, brutto,kassir,postachalnik,material,price,is_enter,is_oplacheno,is_finished,zasor) VALUES('%s',%d,'%s','%s','%s',%f,%d,%d,%d,%d)" % (
-                        self.record.avto, self.record.vaga, self.record.kassir,
-                        self.record.postachalnik, self.record.material,
-                        self.record.price, self.record.is_enter,
-                        self.record.is_oplacheno, self.record.if_finished,
-                        self.record.zasor)
-                    write_to_db(query)
-                    # self.material_table.setRowCount(0)
-                    self.record.clear_values()
+                self.auto_entrance()
             else:
-                self.record.is_enter = 0
-                # if self.pay_checkbox.isChecked():
-                #     self.record.is_oplacheno = 1
-                print('Выезд')
-                self.record.if_finished = 1
-                result = make_request(
-                    "SELECT * FROM records WHERE car_num ='%s' AND is_finished = 0 AND is_rashod = 0"
-                    % self.record.avto)
-                print(result)
-                if (len(result) == 0):
-                    QtWidgets.QMessageBox.about(
-                        self, 'Направте авто на розвантаження',
-                        'Направте на розвантаження')
-                else:
-                    weight_before = result[0][2]
-                    self.record.brutto = weight_before
-                    self.record.tara = self.record.vaga
-                    enter_time = result[0][0]
-                    print(weight_before, self.record.vaga)
-                    if weight_before >= self.record.vaga:
-                        # self.pending_car_list.addItem(self.record.avto)
-                        for i in car_list:
-                            if i == self.record.avto:
-                                print(i, self.record.avto)
-                                try:
-                                    result = make_request("SELECT now()")
-                                    exit_time = result[0][0]
-                                    diff_time = exit_time - enter_time
-                                    print(diff_time)
-                                    print("weight_before = ", weight_before)
-                                    vaga = weight_before - self.record.vaga
-                                    self.record.netto = vaga
-                                    if total_json_values_sum > self.record.netto:
-                                        QtWidgets.QMessageBox.about(
-                                            self,
-                                            'Вага у таблиці більше веса нетто',
-                                            'Вага (%d) у таблиці \n\rбільше ваги нетто (%d)'
-                                            % (total_json_values_sum,
-                                               self.record.netto))
-                                        return
-                                    data = '{0:%d-%m-%Y %H:%M:%S}'.format(
-                                        datetime.datetime.now())
-                                    diff_time_str = str(diff_time)
-                                    printstring = "Касир : %s\n+ Номер авто: %s\n+ Постачальник: %s\n+ Матеріал: %s\n+ Брутто: %d кг\n+ Тара: %d кг\n+ Нетто: %d кг\n+ Засмічення в кг: %d \n+ Ціна за кг: %.2f\n+ До сплати(грн): %.2f\n+ Дата: %s\n+ Час розвантаження: %s\n" % (
-                                        self.record.kassir, self.record.avto,
-                                        self.record.postachalnik,
-                                        self.record.material,
-                                        self.record.brutto, self.record.tara,
-                                        self.record.netto, self.record.zasor,
-                                        self.record.price,
-                                        (self.record.netto * self.record.price)
-                                        - self.record.zasor, data,
-                                        diff_time_str)
-                                    kassir_question = QtWidgets.QMessageBox()
-                                    kassir_question.setIcon(
-                                        QtWidgets.QMessageBox.Question)
-                                    kassir_question.setWindowTitle("Записати?")
-                                    dialogfont = QtGui.QFont(
-                                        "Times", 17, QtGui.QFont.Normal)
-                                    kassir_question.setFont(dialogfont)
-                                    kassir_question.setText(printstring)
-                                    kassir_question.setStandardButtons(
-                                        QtWidgets.QMessageBox.Yes
-                                        | QtWidgets.QMessageBox.No)
-                                    printButton = kassir_question.addButton(
-                                        'Друкувати та записати',
-                                        QtWidgets.QMessageBox.ActionRole)
-                                    buttonY = kassir_question.button(
-                                        QtWidgets.QMessageBox.Yes)
-                                    buttonY.setText('Записати')
-                                    buttonN = kassir_question.button(
-                                        QtWidgets.QMessageBox.No)
-                                    buttonN.setText('Відміна')
-                                    kassir_question.exec_()
-                                    if kassir_question.clickedButton(
-                                    ) == buttonY:
-                                        print('Yes clicked.')
-                                        query = "UPDATE records SET tara = %d, is_enter = %d, is_oplacheno = %d ,is_finished = %d, exit_time=now(), netto = %d, zasor = %d WHERE car_num = '%s'   AND is_finished = 0 " % (
-                                            self.record.vaga,
-                                            self.record.is_enter,
-                                            self.record.is_oplacheno,
-                                            self.record.if_finished,
-                                            self.record.netto,
-                                            self.record.zasor,
-                                            self.record.avto)
-                                        write_to_db(query)
-                                        # cur.execute(query)
-                                        # db.commit()
-                                        car_list.remove(self.record.avto)
-                                        # clear fields
-                                        self.postachalnik.clear()
-                                        self.car_num.clear()
-                                        # self.material_table.setRowCount(0)
-                                        self.zasor.clear()
-                                    if kassir_question.clickedButton(
-                                    ) == buttonN:
-                                        print('No clicked.')
-                                    if kassir_question.clickedButton(
-                                    ) == printButton:
-                                        print('Print clicked.')
-                                        query = "UPDATE records SET tara = %d, is_enter = %d, is_oplacheno = %d ,is_finished = %d, exit_time=now(), netto = %d, zasor = %d WHERE car_num = '%s'  AND is_finished = 0 " % (
-                                            self.record.vaga,
-                                            self.record.is_enter,
-                                            self.record.is_oplacheno,
-                                            self.record.if_finished,
-                                            self.record.netto,
-                                            self.record.zasor,
-                                            self.record.avto)
-                                        write_to_db(query)
-                                        # cur.execute(query)
-                                        # db.commit()
-                                        # query = "SELECT now()"
-                                        # cur.execute(query)
-                                        # result = cur.fetchall()
-                                        result = make_request("SELECT now()")
-                                        exit_time = result[0][0]
-                                        diff_time = exit_time - enter_time
-                                        print(diff_time)
-                                        filename = tempfile.mktemp(".txt")
-                                        vaga = weight_before - self.record.vaga
-                                        data = '{0:%Y-%m-%d %H:%M:%S}'.format(
-                                            datetime.datetime.now())
-                                        diff_time_str = str(diff_time)
-                                        # printstring = "+++++++++++++++++++++++++++++\n+ Кассир : %s\n+ Номер автомобиля: %s\n+ Поставщик: %s\n+ Материал: %s\n+ Брутто: %d кг\n+ Тара: %d кг\n+ Нетто: %d кг\n+ Цена за кг: %.2f\n+ К оплате(грн): %.2f\n+ Дата: %s\n+ Время разгрузки: %s\n+++++++++++++++++++++++++++++\n"%(self.record.kassir, self.record.avto, self.record.postachalnik, self.record.material, self.record.brutto,self.record.tara,self.record.netto, self.record.price, self.record.netto*self.record.price, data, diff_time_str)
-                                        printstring = "+ Касир : %s\n+ Номер авто: %s\n+ Постачальник: %s\n+ Матеріал: %s\n+ Брутто: %d кг\n+ Тара: %d кг\n+ Нетто: %d кг\n+ Засмічення в кг: %d \n+ Ціна за кг: %.2f\n+ До сплати(грн): %.2f\n+ Дата: %s\n+ Час розвантаження: %s\n" % (
-                                            self.record.kassir,
-                                            self.record.avto,
-                                            self.record.postachalnik,
-                                            self.record.material,
-                                            self.record.brutto,
-                                            self.record.tara,
-                                            self.record.netto,
-                                            self.record.zasor,
-                                            self.record.price,
-                                            (self.record.netto * self.record.
-                                             price) - self.record.zasor, data,
-                                            diff_time_str)
-                                        # printstring = "+++++++++++++++++++++++++++++\n+ Кассир : %s\n+ Номер автомобиля: %s\n+ Поставщик: %s\n+ Материал: %s\n+ Вес: %d кг\n+ Цена за кг: %.2f\n+ К оплате(грн): %.2f\n+ Дата: %s\n+ Время разгрузки: %s\n+++++++++++++++++++++++++++++\n"%(self.record.kassir, self.record.avto, self.record.postachalnik, self.record.material, vaga, self.record.price, vaga*self.record.price, data, diff_time_str)
-                                        open(filename, "w").write(printstring)
-                                        print(printstring)
-                                        query = "UPDATE records SET tara = %d, is_enter = %d, is_oplacheno = %d ,is_finished =%d, exit_time=now() WHERE car_num = '%s'" % (
-                                            self.record.vaga,
-                                            self.record.is_enter,
-                                            self.record.is_oplacheno,
-                                            self.record.if_finished,
-                                            self.record.avto)
-                                        write_to_db(query)
-                                        # cur.execute(query)
-                                        # db.commit()
-                                        win32api.ShellExecute(
-                                            0, "printto", filename, '"%s"' %
-                                                                    win32print.GetDefaultPrinter(),
-                                            ".", 0)
-                                        car_list.remove(self.record.avto)
-                                        self.postachalnik.clear()
-                                        self.car_num.clear()
-                                        # self.material_table.setRowCount(0)
-                                        self.zasor.clear()
-                                    self.pending_car_list.clear()
-                                    self.pending_car_list.addItems(car_list)
-                                    self.record.clear_values()
-                                except Exception as e:
-                                    print(e)
-                                    QtWidgets.QMessageBox.about(
-                                        self, 'Авто не було на розвантаженні',
-                                        'Направте на розвантаження')
-                    else:
-                        QtWidgets.QMessageBox.about(
-                            self, 'Проблема з вагою авто',
-                            'Вага до розвантаження більше ніж після')
-            # num = self.car_num.text()
-            # self.pending_car_list.clear()
+                self.auto_exit()
         else:
             print("Ups something wrong")
             QtWidgets.QMessageBox.about(self, 'Отримайте вагу', 'Отримайте вагу')
@@ -997,6 +1078,8 @@ class Window(QtWidgets.QWidget):
                 self.price.setText(str(result[0][7]))
                 self.postachalnik.setText(result[0][5])
                 self.zasor.setText(str(result[0][13]))
+                if result[0][16] == 1:
+                    self.rashod_checkbox.setChecked(True)
                 material_json_dumps = json.loads(result[0][6].replace(
                     '\"', '"'))
                 print(material_json_dumps)
