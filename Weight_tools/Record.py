@@ -755,6 +755,8 @@ class AddRecord(QtWidgets.QMainWindow):
         self.edit_vbox.addWidget(self.postach)
         self.edit_vbox.addWidget(self.carnum)
 
+        self.is_rashod = QtWidgets.QCheckBox("Продаж")
+        self.is_rashod.setFont(self.newfont)
         self.hbox = QtWidgets.QHBoxLayout(self)
         if (respond[0][0] == 0):
             QtWidgets.QMessageBox.about(self, "Заборонено", "Заборонено")
@@ -775,6 +777,7 @@ class AddRecord(QtWidgets.QMainWindow):
 
         self.vbox = QtWidgets.QVBoxLayout(self)
         self.vbox.addLayout(self.hbox)
+        self.vbox.addWidget(self.is_rashod)
         self.vbox.addLayout(self.button_box)
         central_widget = QtWidgets.QWidget(self)
         central_widget.setLayout(self.vbox)
@@ -782,8 +785,12 @@ class AddRecord(QtWidgets.QMainWindow):
 
     def writeData(self):
         try:
-            brutto = int(self.brutto.text())
-            tara = int(self.tara.text())
+            if self.is_rashod.isChecked():
+                tara = int(self.brutto.text())
+                brutto = int(self.tara.text())
+            else:
+                brutto = int(self.brutto.text())
+                tara = int(self.tara.text())
         except Exception as e:
             QtWidgets.QMessageBox.about(self, "ERROR", str(e))
             return
@@ -794,10 +801,13 @@ class AddRecord(QtWidgets.QMainWindow):
         postach = self.postach.text()
         carnum = self.carnum.text()
         date = self.datetime.dateTime().toPyDateTime()
+        is_rashod = 0
+        if self.is_rashod.isChecked():
+            is_rashod = 1
         if brutto and tara and postach and carnum and date:
-            request = "INSERT INTO records (date,car_num, brutto, tara, kassir, postachalnik, material,price,is_enter,is_oplacheno,is_finished, exit_time,netto,zasor,is_archived) values('%s','%s',%d,%d,'%s','%s','%s',%f,%d,%d,%d,'%s',%d,%d,%d)" % (
+            request = "INSERT INTO records (date,car_num, brutto, tara, kassir, postachalnik, material,price,is_enter,is_oplacheno,is_finished, exit_time,netto,zasor,is_archived, is_rashod) values('%s','%s',%d,%d,'%s','%s','%s',%f,%d,%d,%d,'%s',%d,%d,%d, %d)" % (
                 str(date), carnum, brutto, tara, "Ручне Додавання", postach,
-                "{}", 0, 0, 0, 1, str(date), (brutto - tara), 0, 0)
+                "{}", 0, 0, 0, 1, str(date), (brutto - tara), 0, 0,is_rashod)
             cur_id = write_to_db(request)
             # mqtt_client.publish("/reload", "1")
             QtWidgets.QMessageBox.about(self, 'Створений запис',

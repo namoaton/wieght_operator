@@ -68,7 +68,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.record_editor_menu = QtWidgets.QAction('Друк документа', self)
         self.record_editor_menu.triggered.connect(self.edit_record)
-        self.record_adder_menu = QtWidgets.QAction('Введення документа', self)
+        self.record_adder_menu = QtWidgets.QAction('Створити документ', self)
         self.record_adder_menu.triggered.connect(self.add_record)
         self.record_remove_menu = QtWidgets.QAction('Видалити документ', self)
         self.record_remove_menu.triggered.connect(self.remove_record)
@@ -94,6 +94,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.record_edit_menu.addAction(self.record_return_menu)
         self.record_edit_menu.addAction(self.record_remove_menu)
         self.record_edit_menu.addAction(self.record_postach_edit_menu)
+
         self.list_postach_menu = QtWidgets.QMenu('Перелік постачальників',
                                                  self)
         self.remove_postach_menu = QtWidgets.QAction('Видалити постачальника', self)
@@ -115,6 +116,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.kassir_menu.addAction(self.add_kassir)
         self.kassir_menu.addAction(self.remove_kassir_menu)
         # self.today_report_menu = QtWidgets.QAction('Отчет за сегодня')
+        self.rashod_date_report_menu = QtWidgets.QAction('Звіт продаж загальний по даті')
+        self.rashod_month_report_menu = QtWidgets.QAction('Звіт продаж загальний за період')
+
         self.date_report_menu = QtWidgets.QAction('Звіт загальний по даті')
         self.month_report_menu = QtWidgets.QAction('Звіт загальний за період')
         self.date_report_bn_menu = QtWidgets.QAction('Звіт безнал по даті')
@@ -131,6 +135,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.month_report_polymer_bn_menu = QtWidgets.QAction(
             'Звіт полімери бн за період')
         # self.today_report_menu.triggered.connect(self.today_report)
+        self.rashod_date_report_menu.triggered.connect(self.rashod_date_report)
+        self.rashod_month_report_menu.triggered.connect(self.rashod_month_report)
+
         self.date_report_menu.triggered.connect(self.date_report)
         self.month_report_menu.triggered.connect(self.month_report)
 
@@ -150,6 +157,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.period_pol_bn_report)
 
         # self.report_menu.addAction(self.today_report_menu)
+        self.report_menu.addAction(self.rashod_date_report_menu)
+        self.report_menu.addAction(self.rashod_month_report_menu)
         self.report_menu.addAction(self.date_report_menu)
         self.report_menu.addAction(self.month_report_menu)
         self.report_menu.addAction(self.date_report_bn_menu)
@@ -299,7 +308,7 @@ class MainWindow(QtWidgets.QMainWindow):
         end_date, end_time, begin_date, begin_time, ok = self.doubleDateDialog.getDateTime(
         )
         result = make_request(
-            "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1"
+            "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1 AND is_rashod = 0"
             % ('{0:%Y-%m-%d}'.format(end_date),
                '{0:%Y-%m-%d}'.format(begin_date)))
         if ok:
@@ -308,16 +317,34 @@ class MainWindow(QtWidgets.QMainWindow):
     def date_report(self):
         date, time, ok = self.dateDialog.getDateTime()
         result = make_request(
-            "SELECT * FROM records WHERE DATE(date) ='%s' AND is_finished = 1 AND is_archived = 1"
+            "SELECT * FROM records WHERE DATE(date) ='%s' AND is_finished = 1 AND is_archived = 1 is_rashod = 0"
             % '{0:%Y-%m-%d}'.format(date))
         if ok:
             DisplayRecords(self, result, date).show()
+
+    def rashod_date_report(self):
+        date, time, ok = self.dateDialog.getDateTime()
+        result = make_request(
+            "SELECT * FROM records WHERE DATE(date) ='%s' AND is_finished = 1 AND is_archived = 1 AND is_rashod = 1"
+            % '{0:%Y-%m-%d}'.format(date))
+        if ok:
+            DisplayRecords(self, result, date).show()
+
+    def rashod_month_report(self):
+        end_date, end_time, begin_date, begin_time, ok = self.doubleDateDialog.getDateTime(
+        )
+        result = make_request(
+            "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1 AND is_rashod = 1"
+            % ('{0:%Y-%m-%d}'.format(end_date),
+               '{0:%Y-%m-%d}'.format(begin_date)))
+        if ok:
+            DisplayRecords(self, result, begin_date, end_date).show()
 
     def month_report_bn(self):
         end_date, end_time, begin_date, begin_time, ok = self.doubleDateDialog.getDateTime(
         )
         result = make_request(
-            "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1 AND material LIKE ('%s')"
+            "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1 AND is_rashod = 0 AND material LIKE ('%s')"
             % ('{0:%Y-%m-%d}'.format(end_date),
                '{0:%Y-%m-%d}'.format(begin_date), "%-бн%"))
         if ok:
@@ -326,7 +353,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def date_report_bn(self):
         date, time, ok = self.dateDialog.getDateTime()
         result = make_request(
-            "SELECT * FROM records WHERE DATE(date) ='%s' AND is_finished = 1 AND is_archived = 1 AND material LIKE ('%s')"
+            "SELECT * FROM records WHERE DATE(date) ='%s' AND is_finished = 1 AND is_archived = 1 AND is_rashod = 0 AND material LIKE ('%s')"
             % ('{0:%Y-%m-%d}'.format(date), "%-бн%"))
         if ok:
             DisplayRecords(self, result, date, bn=3).show()
@@ -335,7 +362,7 @@ class MainWindow(QtWidgets.QMainWindow):
         end_date, end_time, begin_date, begin_time, ok = self.doubleDateDialog.getDateTime(
         )
         result = make_request(
-            "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1 AND material NOT LIKE ('%s')"
+            "SELECT * FROM records WHERE DATE(date) >='%s' and DATE(date)<='%s' AND is_finished = 1 AND is_archived = 1 AND is_rashod = 0 AND material NOT LIKE ('%s')"
             % ('{0:%Y-%m-%d}'.format(end_date),
                '{0:%Y-%m-%d}'.format(begin_date), "%-бн%"))
         if ok:
@@ -344,7 +371,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def date_report_pr(self):
         date, time, ok = self.dateDialog.getDateTime()
         result = make_request(
-            "SELECT * FROM records WHERE DATE(date) ='%s' AND is_finished = 1 AND is_archived = 1 AND material NOT LIKE ('%s')"
+            "SELECT * FROM records WHERE DATE(date) ='%s' AND is_finished = 1 AND is_archived = 1 AND is_rashod = 0 AND  material NOT LIKE ('%s')"
             % ('{0:%Y-%m-%d}'.format(date), "%-бн%"))
         if ok:
             DisplayRecords(self, result, date, bn=4).show()
