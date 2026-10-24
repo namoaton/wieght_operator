@@ -857,14 +857,6 @@ class Window(QtWidgets.QWidget):
             filename = tempfile.mktemp(".txt")
             open(filename, "w").write(printstring)
             print(printstring)
-
-            query = "UPDATE records SET tara = %d, is_enter = %d, is_oplacheno = %d ,is_finished =%d, exit_time=now() WHERE car_num = '%s'" % (
-                self.record.vaga,
-                self.record.is_enter,
-                self.record.is_oplacheno,
-                self.record.if_finished,
-                self.record.avto)
-            write_to_db(query)
             # win32api.ShellExecute(
             #     0, "printto", filename, '"%s"' %
             #     win32print.GetDefaultPrinter(),
